@@ -527,9 +527,23 @@ function recapHtml(r, f) {
 }
 
 /* ------------------------------------------------------- les capitaines */
+/* Les compositions en cours d'édition vivent dans S.draft, jamais dans S.st :
+   le rafraîchissement automatique remplace S.st et effacerait la saisie. */
 function propOf(round, team) {
-  const g = ((S.st.proposals || {})[round] || {})[team] || [];
+  const d = ((S.draftProp || {})[round] || {})[team];
+  const g = d || ((S.st.proposals || {})[round] || {})[team] || [];
   return [0, 1, 2].map((i) => [(g[i] || [])[0] || "", (g[i] || [])[1] || ""]);
+}
+function setProp(round, team, g) {
+  S.draftProp = S.draftProp || {};
+  S.draftProp[round] = { ...(S.draftProp[round] || {}), [team]: g };
+}
+function flightsOf(round) {
+  return (S.draftFlights || {})[round] || S.st.flights[round] || [];
+}
+function setFlights(round, list) {
+  S.draftFlights = S.draftFlights || {};
+  S.draftFlights[round] = list;
 }
 function capHtml() {
   const team = S.st.captainOf;
@@ -547,7 +561,9 @@ function capHtml() {
     return `<button data-capround="${R.id}" aria-pressed="${sel === R.id}">${esc(R.nom)}${done3 ? " ✓" : ""}</button>`;
   }).join("") + `</div>`;
 
-  h += `<div class="card"><h2>${esc(round(sel).lieu)} <span class="sub">${esc(round(sel).jour)}</span></h2>`;
+  const dirtyC = !!((S.draftProp || {})[sel] || {})[team];
+  h += `<div class="card"><h2>${esc(round(sel).lieu)} <span class="sub">${
+    dirtyC ? '<span class="unsaved">non enregistré</span>' : esc(round(sel).jour)}</span></h2>`;
   for (let k = 0; k < 3; k++) {
     h += `<div class="pad" style="padding-bottom:4px"><b>Partie ${k + 1}</b></div>`;
     for (let s = 0; s < 2; s++) {
@@ -609,8 +625,9 @@ function adminHtml() {
   }).join("") + `</div>`;
   for (const R of st.rounds) {
     if (R.id !== sel) continue;
-    const list = st.flights[R.id] || [];
-    h += `<div class="card"><h2>${esc(R.nom)} <span class="sub">${esc(R.lieu)}</span></h2>`;
+    const list = flightsOf(R.id);
+    h += `<div class="card"><h2>${esc(R.nom)} <span class="sub">${
+      (S.draftFlights || {})[R.id] ? '<span class="unsaved">non enregistré</span>' : esc(R.lieu)}</span></h2>`;
     /* ce que les capitaines ont proposé */
     const pb = propOf(R.id, "b"), pv = propOf(R.id, "v");
     const full = (g) => g.filter((x) => x[0] && x[1]).length === 3;
@@ -726,8 +743,7 @@ document.addEventListener("click", async (e) => {
   if (b.dataset.capround) { S.capRound = b.dataset.capround; render(); window.scrollTo(0, 0); return; }
   if (b.dataset.capsuggest) {
     const rid = b.dataset.capsuggest, tm = S.st.captainOf;
-    S.st.proposals = S.st.proposals || {};
-    S.st.proposals[rid] = { ...(S.st.proposals[rid] || {}), [tm]: capSuggest(rid, tm) };
+    setProp(rid, tm, capSuggest(rid, tm));
     render(); toast("Répartition proposée — pensez à enregistrer.");
     return;
   }
@@ -735,15 +751,16 @@ document.addEventListener("click", async (e) => {
     const rid = b.dataset.saveprop, tm = S.st.captainOf, g = propOf(rid, tm);
     if (g.some((x) => !x[0] || !x[1])) return toast("Il reste des places vides.", true);
     await write("proposal", { round: rid, team: tm, flights: g }, "Composition enregistrée.");
+    if (S.draftProp && S.draftProp[rid]) delete S.draftProp[rid][tm];
     await load(); return;
   }
   if (b.dataset.useprop) {
     const rid = b.dataset.useprop, pb = propOf(rid, "b"), pv = propOf(rid, "v");
-    S.st.flights[rid] = [0, 1, 2].map((k) => ({
-      ...((S.st.flights[rid] || [])[k] || {}), id: "p" + (k + 1),
+    setFlights(rid, [0, 1, 2].map((k) => ({
+      ...(flightsOf(rid)[k] || {}), id: "p" + (k + 1),
       players: [pb[k][0], pv[k][0], pb[k][1], pv[k][1]].filter(Boolean),
-      marker: ((S.st.flights[rid] || [])[k] || {}).marker || null,
-    }));
+      marker: (flightsOf(rid)[k] || {}).marker || null,
+    })));
     render(); toast("Places pré-remplies — vérifiez et enregistrez.");
     return;
   }
@@ -804,28 +821,30 @@ document.addEventListener("click", async (e) => {
   }
   if (b.dataset.suggest) {
     const rid = b.dataset.suggest, fl = suggest(rid);
-    S.st.flights[rid] = fl.map((players, k) => {
-      const prev = ((S.st.flights[rid] || [])[k] || {}).marker;
+    setFlights(rid, fl.map((players, k) => {
+      const prev = (flightsOf(rid)[k] || {}).marker;
       /* on ne désigne jamais de marqueur tout seul : il reste à choisir */
-      return { ...(S.st.flights[rid] || [])[k], id: "p" + (k + 1), players,
+      return { ...(flightsOf(rid)[k] || {}), id: "p" + (k + 1), players,
                marker: prev && players.includes(prev) ? prev : null };
-    });
+    }));
     render(); toast("Rotation proposée — choisissez les marqueurs, puis enregistrez.");
     return;
   }
   if (b.dataset.rotate) {
     const [rid, k] = b.dataset.rotate.split("|");
-    const list = (S.st.flights[rid] || []).map((f, i) => ({ ...f, rotate: i === +k }));
-    await write("flights", { round: rid, flights: list }, "Nouveau lien généré."); await load();
-    return;
+    const list = flightsOf(rid).map((f, i) => ({ ...f, rotate: i === +k }));
+    await write("flights", { round: rid, flights: list }, "Nouveau lien généré.");
+    if (S.draftFlights) delete S.draftFlights[rid];
+    await load(); return;
   }
   if (b.dataset.saveflights) {
     const rid = b.dataset.saveflights;
-    const list = (S.st.flights[rid] || []).map((f) => ({ id: f.id, players: f.players.filter(Boolean), marker: f.marker }));
+    const list = flightsOf(rid).map((f) => ({ id: f.id, players: (f.players || []).filter(Boolean), marker: f.marker || null }));
     const flat = list.flatMap((f) => f.players);
     if (new Set(flat).size !== flat.length) return toast("Un joueur figure dans deux parties.", true);
-    await write("flights", { round: rid, flights: list }, "Parties enregistrées."); await load();
-    return;
+    await write("flights", { round: rid, flights: list }, "Parties enregistrées.");
+    if (S.draftFlights) delete S.draftFlights[rid];
+    await load(); return;
   }
   if (b.dataset.clear) {
     if (!window.confirm("Effacer tous les scores de cette journée ? C'est définitif.")) return;
@@ -861,14 +880,14 @@ document.addEventListener("change", async (e) => {
     if (t.value) for (let a = 0; a < 3; a++) for (let b2 = 0; b2 < 2; b2++)
       if (g[a][b2] === t.value && !(a === +k && b2 === +s)) g[a][b2] = g[+k][+s];
     g[+k][+s] = t.value || "";
-    S.st.proposals = S.st.proposals || {};
-    S.st.proposals[rid] = { ...(S.st.proposals[rid] || {}), [tm]: g };
+    setProp(rid, tm, g);
     render(); return;
   }
   if (t.dataset.fp) {
     const [rid, k, s] = t.dataset.fp.split("|");
-    const list = S.st.flights[rid] || (S.st.flights[rid] = []);
+    const list = flightsOf(rid).map((f) => ({ ...f, players: [...(f.players || [])] }));
     for (let i = 0; i < 3; i++) if (!list[i]) list[i] = { id: "p" + (i + 1), players: [], marker: null };
+    setFlights(rid, list);
     const f = list[+k];
     /* échange si le joueur choisi est déjà placé ailleurs */
     if (t.value) for (const g2 of list) {
@@ -880,8 +899,10 @@ document.addEventListener("change", async (e) => {
   }
   if (t.dataset.fm) {
     const [rid, k] = t.dataset.fm.split("|");
-    (S.st.flights[rid][+k]).marker = t.value || null;
-    return;
+    const l2 = flightsOf(rid).map((f) => ({ ...f }));
+    if (!l2[+k]) l2[+k] = { id: "p" + (+k + 1), players: [], marker: null };
+    l2[+k].marker = t.value || null;
+    setFlights(rid, l2); return;
   }
 });
 document.addEventListener("keydown", (e) => {
