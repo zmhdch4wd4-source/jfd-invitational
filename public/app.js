@@ -101,6 +101,7 @@ async function load(silent) {
     if (S.inflight > 0 && silent) return;
     S.st = st;
     render();
+    maybeWelcome();
   } catch (e) {
     if (!silent) $("#view").innerHTML = `<div class="card"><div class="empty">Impossible de joindre le serveur.<br>${esc(e.message)}</div></div>`;
   }
@@ -172,9 +173,9 @@ function liveRound() {
   }
   return best;
 }
-function greetingHtml() {
+function greetingParts() {
   const st = S.st, me = player(st.me);
-  if (!me) return "";
+  if (!me) return null;
   const cap = st.captainOf;
   const f = myFlight();
   const r = liveRound();
@@ -223,15 +224,33 @@ function greetingHtml() {
   if (f && announce(markRound(), me.id) == null)
     lines.push(`Pensez à recueillir les annonces du Prophète avant le départ du 1.`);
   if (!lines.length) lines.push(`Le séjour n'a pas encore commencé. Bonne route.`);
+  return { hello, cap, lines: lines.slice(0, 3) };
+}
 
-  return `<div class="hi"><h2>${hello}</h2>` +
-    (cap ? `<span class="cap">Capitaine · ${esc(EQ[cap].nom)}</span>` : "") +
-    lines.slice(0, 3).map((l) => `<p>${l}</p>`).join("") + `</div>`;
+/* page d'accueil plein écran, refermée d'une touche */
+let welcomed = false;
+try { welcomed = sessionStorage.getItem("jfd.hello") === "1"; } catch {}
+function maybeWelcome() {
+  if (welcomed || $("#splash") || !S.st || !identified()) return;
+  const g = greetingParts();
+  if (!g) return;
+  welcomed = true;
+  try { sessionStorage.setItem("jfd.hello", "1"); } catch {}
+  const o = el(`<div id="welcome"><div class="inner">
+      <img src="/logo-mark.png" alt="">
+      <h2>${g.hello}</h2>
+      ${g.cap ? `<div class="cap">Capitaine · ${esc(EQ[g.cap].nom)}</div>` : ""}
+      <div class="rule"></div>
+      ${g.lines.map((l) => `<p>${l}</p>`).join("")}
+    </div><div class="tap">Touchez l'écran pour continuer</div></div>`);
+  const close = () => { o.classList.add("out"); setTimeout(() => o.remove(), 380); };
+  o.addEventListener("click", close);
+  document.body.appendChild(o);
 }
 
 function boardHtml() {
   const st = S.st;
-  let h = greetingHtml();
+  let h = "";
   if (!st.hasAdmin) {
     h += `<div class="card"><h2>Première mise en route</h2><div class="pad">
       <p class="sm muted" style="margin-top:0">Choisissez le code d'administration du séjour. Il vous donnera seul
@@ -882,7 +901,11 @@ function closeSheet() {
   if (seen) splash.remove();
   else {
     sessionStorage.setItem("jfd.splash", "1");
-    const close = () => { splash.classList.add("out"); setTimeout(() => splash.remove(), 480); };
+    const close = () => {
+      if (!$("#splash")) return;
+      splash.classList.add("out");
+      setTimeout(() => { splash.remove(); maybeWelcome(); }, 480);
+    };
     setTimeout(close, 2000);
     splash.addEventListener("click", close);
   }
