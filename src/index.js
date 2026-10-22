@@ -83,12 +83,13 @@ function mayWrite(role, round, player) {
 
 /* -------------------------------------------------------------- lecture */
 async function readState(db, role) {
-  const [players, teamMode, r1pars, flights, adminHash, sc, an] = await Promise.all([
+  const [players, teamMode, r1pars, flights, adminHash, proposals, sc, an] = await Promise.all([
     getSetting(db, "players", PLAYERS),
     getSetting(db, "teamMode", "best4"),
     getSetting(db, "r1pars", null),
     getSetting(db, "flights", {}),
     getSetting(db, "adminHash", null),
+    getSetting(db, "proposals", {}),
     db.prepare(`SELECT round, player, hole, strokes FROM scores`).all(),
     db.prepare(`SELECT round, player, value FROM announces`).all(),
   ]);
@@ -111,10 +112,14 @@ async function readState(db, role) {
     safeFlights[round] = list.map((f) =>
       role === "admin" ? f : { id: f.id, players: f.players, marker: f.marker });
 
+  const meId = role && role !== "admin" ? role.id : null;
+  const mePl = meId ? players.find((p) => p.id === meId) : null;
   return {
     hasAdmin: !!adminHash,
     role: role === "admin" ? "admin" : role && role.kind === "marker" ? "marker" : role ? "player" : "reader",
-    me: role && role !== "admin" ? role.id : null,
+    me: meId,
+    captainOf: mePl && mePl.cap ? mePl.eq : null,
+    proposals,
     myFlights: role && role !== "admin" && role.kind === "marker"
       ? role.grants.map((g) => ({ round: g.round, id: g.flight.id })) : [],
     players, teamMode, rounds, flights: safeFlights, scores, announces,
@@ -173,6 +178,28 @@ export default {
               .bind(round, player, Math.min(200, Math.max(30, v))).run();
           else
             await db.prepare(`DELETE FROM announces WHERE round=? AND player=?`).bind(round, player).run();
+          return json({ ok: true });
+        }
+
+        /* --- proposition d'un capitaine : ses six joueurs répartis dans les trois parties --- */
+        case "/api/proposal": {
+          const players = await getSetting(db, "players", PLAYERS);
+          const me = role && role !== "admin" ? players.find((p) => p.id === role.id) : null;
+          const team = String(body.team || "");
+          if (role !== "admin" && !(me && me.cap && me.eq === team))
+            return bad("Réservé au capitaine de cette équipe.", 403);
+          if (!body.round) return bad("Parcours manquant.");
+          const mine = new Set(players.filter((p) => p.eq === team).map((p) => p.id));
+          const groups = (body.flights || []).slice(0, 3).map((g) =>
+            (g || []).filter((x) => mine.has(x)).slice(0, 2));
+          const seen = new Set();
+          for (const g of groups) for (const x of g) {
+            if (seen.has(x)) return bad("Un joueur figure dans deux parties.");
+            seen.add(x);
+          }
+          const all = await getSetting(db, "proposals", {});
+          all[body.round] = { ...(all[body.round] || {}), [team]: groups };
+          await setSetting(db, "proposals", all);
           return json({ ok: true });
         }
 

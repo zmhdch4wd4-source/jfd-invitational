@@ -138,6 +138,7 @@ function render() {
 
   const tabs = [["board", "Classement", `<path d="M4 19V9M10 19V4M16 19v-7"/>`], ["carnet", "Carnet", `<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3Z"/><path d="M5 17h14"/>`]];
   if (st.role === "marker" || st.role === "admin") tabs.push(["mark", "Ma partie", `<path d="M5 3v18"/><path d="M5 4h12l-2 4 2 4H5"/>`]);
+  if (st.captainOf) tabs.push(["cap", "Composition", `<path d="M9 7a2.5 2.5 0 1 1 5 0 2.5 2.5 0 0 1-5 0Z"/><path d="M4 20a5 5 0 0 1 5-5h5a5 5 0 0 1 5 5"/><path d="M17 4h4m-2-2v4"/>`]);
   if (st.role === "admin") tabs.push(["admin", "Réglages", `<circle cx="12" cy="12" r="3"/><path d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6l1.4 1.4m10 10 1.4 1.4m0-12.8-1.4 1.4m-10 10L5.6 18.4"/>`]);
   if (!tabs.some((t) => t[0] === S.tab)) S.tab = "board";
   const nav = $("#tabs");
@@ -149,13 +150,88 @@ function render() {
   v.innerHTML = S.tab === "board" ? boardHtml()
     : S.tab === "carnet" ? carnetTabHtml()
     : S.tab === "mark" ? markHtml()
+    : S.tab === "cap" ? capHtml()
     : adminHtml();
 }
 
 /* ------------------------------------------------------------- classement */
+/* ------------------------------------------------------------- accueil */
+function teamNet(e, sel) {
+  const vals = S.st.players.filter((p) => p.eq === e).map((p) =>
+    sel === "cumul" ? (cumul(p.id).cnt ? cumul(p.id).n : null) : (done(sel, p.id) ? net(sel, p.id) : null)
+  ).filter((x) => x != null).sort((a, b) => a - b);
+  const used = S.st.teamMode === "best4" ? vals.slice(0, 4) : vals;
+  return used.length ? { tot: used.reduce((a, b) => a + b, 0), n: used.length } : null;
+}
+/** Le parcours « du moment » : le dernier où quelqu'un a saisi un score. */
+function liveRound() {
+  let best = null;
+  for (const R of S.st.rounds) {
+    const any = S.st.players.some((p) => played(R.id, p.id));
+    if (any) best = R.id;
+  }
+  return best;
+}
+function greetingHtml() {
+  const st = S.st, me = player(st.me);
+  if (!me) return "";
+  const cap = st.captainOf;
+  const f = myFlight();
+  const r = liveRound();
+
+  const hello = cap ? `Bonjour Capitaine ${esc(me.nom)}` : `Bonjour ${esc(me.nom)}`;
+  const lines = [];
+
+  /* sa situation du jour */
+  if (r && played(r, me.id)) {
+    const j = played(r, me.id), tp = toPar(r, me.id), R = round(r);
+    if (done(r, me.id)) {
+      const q = proph(r, me.id);
+      lines.push(`Carte rentrée à ${esc(R.lieu)} : <b>${gross(r, me.id)} brut</b>, ${net(r, me.id)} net.` +
+        (q == null ? "" : q === 0 ? ` Annonce exacte au Prophète — la tournée est pour vous.` : ` Prophète : ${q} point${q > 1 ? "s" : ""}.`));
+    } else {
+      lines.push(`Après ${j} trou${j > 1 ? "s" : ""} à ${esc(R.lieu)}, vous êtes à <b>${dTxt(tp)}</b>.`);
+    }
+  }
+
+  /* son rôle du jour */
+  if (f) {
+    const names = f.players.filter((x) => x !== me.id).map((x) => (player(x) || {}).nom).filter(Boolean);
+    lines.push(`Vous tenez la carte aujourd'hui, avec ${esc(names.join(", "))}.`);
+  }
+
+  /* le duel */
+  const sel = r || "cumul";
+  const tb = teamNet("b", sel), tv = teamNet("v", sel);
+  if (tb && tv) {
+    const d = Math.abs(tb.tot - tv.tot), lead = tb.tot < tv.tot ? "b" : "v";
+    const mine = lead === me.eq;
+    lines.push(d === 0
+      ? `${EQ[me.eq].nom} et ${EQ[me.eq === "b" ? "v" : "b"].nom} sont à égalité parfaite.`
+      : mine ? `${EQ[lead].nom} mènent de <b>${d} coup${d > 1 ? "s" : ""}</b>. Tenez bon.`
+             : `${EQ[lead].nom} mènent de <b>${d} coup${d > 1 ? "s" : ""}</b>. Il y a du travail.`);
+  }
+
+  /* ce qu'il reste à faire */
+  if (cap) {
+    const manque = st.rounds.filter((R) => {
+      const g = ((st.proposals || {})[R.id] || {})[cap] || [];
+      return g.filter((x) => (x || []).length === 2).length < 3;
+    });
+    if (manque.length) lines.push(`Votre composition reste à faire pour ${esc(manque.map((R) => "le " + R.nom.toLowerCase()).join(" et "))}.`);
+  }
+  if (f && announce(markRound(), me.id) == null)
+    lines.push(`Pensez à recueillir les annonces du Prophète avant le départ du 1.`);
+  if (!lines.length) lines.push(`Le séjour n'a pas encore commencé. Bonne route.`);
+
+  return `<div class="hi"><h2>${hello}</h2>` +
+    (cap ? `<span class="cap">Capitaine · ${esc(EQ[cap].nom)}</span>` : "") +
+    lines.slice(0, 3).map((l) => `<p>${l}</p>`).join("") + `</div>`;
+}
+
 function boardHtml() {
   const st = S.st;
-  let h = "";
+  let h = greetingHtml();
   if (!st.hasAdmin) {
     h += `<div class="card"><h2>Première mise en route</h2><div class="pad">
       <p class="sm muted" style="margin-top:0">Choisissez le code d'administration du séjour. Il vous donnera seul
@@ -431,6 +507,79 @@ function recapHtml(r, f) {
     <div class="pnav"><button data-act="backholes">‹ Revenir aux trous</button></div>`;
 }
 
+/* ------------------------------------------------------- les capitaines */
+function propOf(round, team) {
+  const g = ((S.st.proposals || {})[round] || {})[team] || [];
+  return [0, 1, 2].map((i) => [(g[i] || [])[0] || "", (g[i] || [])[1] || ""]);
+}
+function capHtml() {
+  const team = S.st.captainOf;
+  const sel = S.capRound || (S.capRound = S.st.rounds[0].id);
+  const squad = S.st.players.filter((p) => p.eq === team);
+  const g = propOf(sel, team);
+  const placed = g.flat().filter(Boolean);
+  const reste = squad.filter((p) => !placed.includes(p.id));
+
+  let h = `<div class="hi" style="margin-bottom:14px"><h2>${esc(EQ[team].nom)}</h2>
+    <p>Répartissez vos six joueurs dans les trois parties. Quentin assemble ensuite
+    votre composition avec celle de l'autre capitaine.</p></div>`;
+  h += `<div class="pills">` + S.st.rounds.map((R) => {
+    const done3 = propOf(R.id, team).filter((x) => x[0] && x[1]).length === 3;
+    return `<button data-capround="${R.id}" aria-pressed="${sel === R.id}">${esc(R.nom)}${done3 ? " ✓" : ""}</button>`;
+  }).join("") + `</div>`;
+
+  h += `<div class="card"><h2>${esc(round(sel).lieu)} <span class="sub">${esc(round(sel).jour)}</span></h2>`;
+  for (let k = 0; k < 3; k++) {
+    h += `<div class="pad" style="padding-bottom:4px"><b>Partie ${k + 1}</b></div>`;
+    for (let s = 0; s < 2; s++) {
+      const cur = g[k][s];
+      h += `<div class="fl2"><span class="n">${s + 1}</span><select data-cp="${k}|${s}">
+        <option value="">—</option>` + squad.map((p) => {
+        const taken = placed.includes(p.id) && p.id !== cur;
+        return `<option value="${p.id}"${p.id === cur ? " selected" : ""}>${esc(p.nom)} · ${String(p.ix).replace(".", ",")}${taken ? " ⇄" : ""}</option>`;
+      }).join("") + `</select></div>`;
+    }
+  }
+  if (reste.length) h += `<p class="note" style="padding-top:10px">Pas encore placés : ${esc(reste.map((p) => p.nom).join(", "))}.</p>`;
+  h += `<div class="pad"><button class="btn" data-saveprop="${sel}">Enregistrer ma composition</button>
+    <div style="height:8px"></div>
+    <button class="btn ghost" data-capsuggest="${sel}">Proposer une répartition</button></div>
+    <p class="note">La répartition proposée évite de refaire jouer ensemble deux joueurs déjà associés un autre jour, et équilibre les index entre les trois parties.</p></div>`;
+
+  /* ce que l'autre capitaine a fait */
+  const other = team === "b" ? "v" : "b";
+  const og = propOf(sel, other);
+  h += `<div class="card"><h2>En face <span class="sub">${esc(EQ[other].nom)}</span></h2>`;
+  h += og.every((x) => !x[0] && !x[1])
+    ? `<div class="empty">${esc(EQ[other].nom)} n'ont pas encore annoncé leur composition.</div>`
+    : og.map((pair, k) => `<div class="team"><span class="swatch ${EQ[other].cls}"></span>
+        <span class="nm">Partie ${k + 1}<br><span class="muted sm">${esc(pair.map((x) => (player(x) || {}).nom || "—").join(" et "))}</span></span></div>`).join("");
+  return h + `</div>`;
+}
+function capSuggest(roundId, team) {
+  const squad = S.st.players.filter((p) => p.eq === team).map((p) => p.id);
+  const seen = new Map();
+  for (const [rid, byTeam] of Object.entries(S.st.proposals || {})) {
+    if (rid === roundId) continue;
+    for (const pair of (byTeam[team] || [])) {
+      const [a, b] = pair || [];
+      if (a && b) { seen.set(a + "|" + b, 1); seen.set(b + "|" + a, 1); }
+    }
+  }
+  let best = null;
+  for (let t = 0; t < 400; t++) {
+    const pool = squad.slice();
+    for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+    const pairs = [pool.slice(0, 2), pool.slice(2, 4), pool.slice(4, 6)];
+    let cost = 0;
+    for (const [a, b] of pairs) cost += (seen.get(a + "|" + b) || 0) * 10;
+    const sums = pairs.map(([a, b]) => (player(a) || {}).ix + (player(b) || {}).ix);
+    cost += Math.max(...sums) - Math.min(...sums);
+    if (best === null || cost < best.cost) best = { cost, pairs };
+  }
+  return best.pairs;
+}
+
 /* --------------------------------------------------------- administration */
 function adminHtml() {
   const st = S.st;
@@ -443,6 +592,20 @@ function adminHtml() {
     if (R.id !== sel) continue;
     const list = st.flights[R.id] || [];
     h += `<div class="card"><h2>${esc(R.nom)} <span class="sub">${esc(R.lieu)}</span></h2>`;
+    /* ce que les capitaines ont proposé */
+    const pb = propOf(R.id, "b"), pv = propOf(R.id, "v");
+    const full = (g) => g.filter((x) => x[0] && x[1]).length === 3;
+    h += `<div class="props"><div class="pt">Propositions des capitaines</div>`;
+    for (const [tm, g] of [["b", pb], ["v", pv]]) {
+      h += `<div class="pr"><span class="swatch ${EQ[tm].cls}"></span><span class="nm">${esc(EQ[tm].nom)}<br>
+        <span class="muted sm">${full(g)
+          ? g.map((x, i) => (i + 1) + ". " + x.map((y) => (player(y) || {}).nom || "—").join(" + ")).join(" · ")
+          : "en attente"}</span></span></div>`;
+    }
+    h += (full(pb) && full(pv))
+      ? `<div class="pad" style="padding-top:8px"><button class="btn gold" data-useprop="${R.id}">Reprendre les deux compositions</button></div>`
+      : `<p class="note" style="padding:8px 14px 12px">Vous pouvez composer sans attendre : reprendre les propositions ne fait que pré-remplir les places.</p>`;
+    h += `</div>`;
     const used = new Set();
     list.forEach((f) => f.players.forEach((p) => used.add(p)));
     for (let k = 0; k < 3; k++) {
@@ -454,7 +617,7 @@ function adminHtml() {
           <option value="">—</option>` +
           st.players.map((p) => {
             const taken = used.has(p.id) && p.id !== cur;
-            return `<option value="${p.id}"${p.id === cur ? " selected" : ""}${taken ? " disabled" : ""}>${esc(p.nom)}${taken ? " (déjà placé)" : ""}</option>`;
+            return `<option value="${p.id}"${p.id === cur ? " selected" : ""}>${esc(p.nom)}${taken ? " ⇄" : ""}</option>`;
           }).join("") + `</select></div>`;
       }
       h += `<div class="fl2"><span class="n" style="font-size:12px">M</span>
@@ -537,6 +700,30 @@ document.addEventListener("click", async (e) => {
   if (b.dataset.croud) { S.carnetRound = b.dataset.croud; render(); return; }
   if (b.dataset.around) { S.adminRound = b.dataset.around; render(); window.scrollTo(0, 0); return; }
   if (b.dataset.mround) { S.markRound = b.dataset.mround; S.step = 0; render(); window.scrollTo(0, 0); return; }
+  if (b.dataset.capround) { S.capRound = b.dataset.capround; render(); window.scrollTo(0, 0); return; }
+  if (b.dataset.capsuggest) {
+    const rid = b.dataset.capsuggest, tm = S.st.captainOf;
+    S.st.proposals = S.st.proposals || {};
+    S.st.proposals[rid] = { ...(S.st.proposals[rid] || {}), [tm]: capSuggest(rid, tm) };
+    render(); toast("Répartition proposée — pensez à enregistrer.");
+    return;
+  }
+  if (b.dataset.saveprop) {
+    const rid = b.dataset.saveprop, tm = S.st.captainOf, g = propOf(rid, tm);
+    if (g.some((x) => !x[0] || !x[1])) return toast("Il reste des places vides.", true);
+    await write("proposal", { round: rid, team: tm, flights: g }, "Composition enregistrée.");
+    await load(); return;
+  }
+  if (b.dataset.useprop) {
+    const rid = b.dataset.useprop, pb = propOf(rid, "b"), pv = propOf(rid, "v");
+    S.st.flights[rid] = [0, 1, 2].map((k) => ({
+      ...((S.st.flights[rid] || [])[k] || {}), id: "p" + (k + 1),
+      players: [pb[k][0], pv[k][0], pb[k][1], pv[k][1]].filter(Boolean),
+      marker: ((S.st.flights[rid] || [])[k] || {}).marker || null,
+    }));
+    render(); toast("Places pré-remplies — vérifiez et enregistrez.");
+    return;
+  }
   if (b.dataset.iam) { ls.set("jfd.me", b.dataset.iam); ls.del("jfd.guest"); S.tab = "board"; await load(); return; }
   if (act === "guest") { ls.set("jfd.guest", "1"); ls.del("jfd.me"); S.tab = "board"; await load(); return; }
   if (act === "changeme") { ls.del("jfd.me"); ls.del("jfd.guest"); ls.del("jfd.admin"); S.tab = "board"; await load(); return; }
@@ -643,10 +830,27 @@ document.addEventListener("change", async (e) => {
     await write("announce", { round: r, player: t.dataset.an, value: isNaN(v) ? 0 : v });
     return;
   }
+  if (t.dataset.cp) {
+    const [k, s] = t.dataset.cp.split("|"), tm = S.st.captainOf, rid = S.capRound;
+    const g = propOf(rid, tm);
+    /* si le joueur choisi occupe déjà une place, on échange les deux */
+    if (t.value) for (let a = 0; a < 3; a++) for (let b2 = 0; b2 < 2; b2++)
+      if (g[a][b2] === t.value && !(a === +k && b2 === +s)) g[a][b2] = g[+k][+s];
+    g[+k][+s] = t.value || "";
+    S.st.proposals = S.st.proposals || {};
+    S.st.proposals[rid] = { ...(S.st.proposals[rid] || {}), [tm]: g };
+    render(); return;
+  }
   if (t.dataset.fp) {
     const [rid, k, s] = t.dataset.fp.split("|");
     const list = S.st.flights[rid] || (S.st.flights[rid] = []);
-    const f = list[+k] || (list[+k] = { id: "p" + (+k + 1), players: [], marker: null });
+    for (let i = 0; i < 3; i++) if (!list[i]) list[i] = { id: "p" + (i + 1), players: [], marker: null };
+    const f = list[+k];
+    /* échange si le joueur choisi est déjà placé ailleurs */
+    if (t.value) for (const g2 of list) {
+      const j = (g2.players || []).indexOf(t.value);
+      if (j >= 0 && !(g2 === f && j === +s)) g2.players[j] = f.players[+s] || null;
+    }
     f.players[+s] = t.value || null;
     render(); return;
   }
