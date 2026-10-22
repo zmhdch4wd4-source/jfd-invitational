@@ -138,7 +138,7 @@ function render() {
   badge.textContent = lbl; badge.hidden = !lbl;
 
   const tabs = [["board", "Classement", `<path d="M4 19V9M10 19V4M16 19v-7"/>`], ["carnet", "Carnet", `<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3Z"/><path d="M5 17h14"/>`]];
-  if (st.role === "marker" || st.role === "admin") tabs.push(["mark", "Ma partie", `<path d="M5 3v18"/><path d="M5 4h12l-2 4 2 4H5"/>`]);
+  if (myFlights().length) tabs.push(["mark", "Ma partie", `<path d="M5 3v18"/><path d="M5 4h12l-2 4 2 4H5"/>`]);
   if (st.captainOf) tabs.push(["cap", "Composition", `<path d="M9 7a2.5 2.5 0 1 1 5 0 2.5 2.5 0 0 1-5 0Z"/><path d="M4 20a5 5 0 0 1 5-5h5a5 5 0 0 1 5 5"/><path d="M17 4h4m-2-2v4"/>`]);
   if (st.role === "admin") tabs.push(["admin", "Réglages", `<circle cx="12" cy="12" r="3"/><path d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6l1.4 1.4m10 10 1.4 1.4m0-12.8-1.4 1.4m-10 10L5.6 18.4"/>`]);
   if (!tabs.some((t) => t[0] === S.tab)) S.tab = "board";
@@ -650,6 +650,10 @@ function adminHtml() {
           <button data-rotate="${R.id}|${k}">Nouveau</button></div>`;
       }
     }
+    const sansMk = list.filter((f) => (f.players || []).filter(Boolean).length && !f.marker).length;
+    if (sansMk) h += `<p class="note" style="padding:4px 14px 10px;color:var(--rouge)">
+      ${sansMk === 1 ? "Une partie n'a pas de marqueur" : sansMk + " parties n'ont pas de marqueur"} :
+      personne ne pourra y saisir de score.</p>`;
     h += `<div class="pad"><button class="btn" data-saveflights="${R.id}">Enregistrer les parties du ${esc(R.nom.toLowerCase())}</button>
       <div style="height:8px"></div>
       <button class="btn ghost" data-suggest="${R.id}">Proposer une rotation</button></div>`;
@@ -800,12 +804,13 @@ document.addEventListener("click", async (e) => {
   }
   if (b.dataset.suggest) {
     const rid = b.dataset.suggest, fl = suggest(rid);
-    S.st.flights[rid] = fl.map((players, k) => ({
-      ...(S.st.flights[rid] || [])[k], id: "p" + (k + 1), players,
-      marker: ((S.st.flights[rid] || [])[k] || {}).marker && players.includes((S.st.flights[rid][k] || {}).marker)
-        ? S.st.flights[rid][k].marker : players[0],
-    }));
-    render(); toast("Rotation proposée — pensez à enregistrer.");
+    S.st.flights[rid] = fl.map((players, k) => {
+      const prev = ((S.st.flights[rid] || [])[k] || {}).marker;
+      /* on ne désigne jamais de marqueur tout seul : il reste à choisir */
+      return { ...(S.st.flights[rid] || [])[k], id: "p" + (k + 1), players,
+               marker: prev && players.includes(prev) ? prev : null };
+    });
+    render(); toast("Rotation proposée — choisissez les marqueurs, puis enregistrez.");
     return;
   }
   if (b.dataset.rotate) {
