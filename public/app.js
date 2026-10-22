@@ -19,6 +19,7 @@ const S = {
 /* ------------------------------------------------------------------ api */
 function authHeader() {
   const a = ls.get("jfd.admin"); if (a) return "admin:" + a;
+  const p = ls.get("jfd.me"); if (p) return "player:" + p;
   const t = ls.get("jfd.token"); if (t) return "token:" + t;
   return "";
 }
@@ -80,10 +81,17 @@ function sumRange(r, p, a, b) {
   for (let i = a; i <= b; i++) { if (!c[i]) full = false; t += c[i] || 0; }
   return { t, full };
 }
+function myFlights() { return (S.st && S.st.myFlights) || []; }
+function markRound() {
+  const g = myFlights();
+  if (!g.length) return null;
+  if (!g.some((x) => x.round === S.markRound)) S.markRound = g[0].round;
+  return S.markRound;
+}
 function myFlight() {
-  const f = S.st.myFlight;
-  if (!f) return null;
-  return (S.st.flights[f.round] || []).find((x) => x.id === f.id) || null;
+  const r = markRound(); if (!r) return null;
+  const g = myFlights().find((x) => x.round === r);
+  return (S.st.flights[r] || []).find((x) => x.id === g.id) || null;
 }
 
 /* ------------------------------------------------------------ chargement */
@@ -105,8 +113,25 @@ async function write(path, body, okMsg) {
 }
 
 /* ------------------------------------------------------------------ vues */
+const identified = () => !!(ls.get("jfd.me") || ls.get("jfd.admin") || ls.get("jfd.guest"));
+
+function identityHtml() {
+  return `<div class="card idcard"><div class="ph1" style="background:none;border-bottom:1px solid var(--rule)">
+      <span class="ey">16–19 mars 2027 · La Rioja</span><h2>Qui êtes-vous ?</h2>
+      <p>Choisissez votre nom. Si vous marquez une partie aujourd'hui, la saisie s'ouvrira toute seule.</p></div>
+    <div class="idgrid">` +
+    S.st.players.map((p) => `<button data-iam="${p.id}"><span class="dot ${EQ[p.eq].cls}"></span>${esc(p.nom)}</button>`).join("") +
+    `</div><div class="pad"><button class="btn ghost" data-act="guest">Je ne suis pas dans la liste</button></div></div>`;
+}
+
 function render() {
   const st = S.st;
+  if (!identified()) {
+    $("#roleBadge").hidden = true;
+    $("#tabs").hidden = true;
+    $("#view").innerHTML = identityHtml();
+    return;
+  }
   const badge = $("#roleBadge");
   const lbl = st.role === "admin" ? "Administrateur" : st.role === "marker" ? "Marqueur" : "";
   badge.textContent = lbl; badge.hidden = !lbl;
@@ -178,8 +203,12 @@ function boardHtml() {
   h += rankCard("Net", "les coups rendus déduits", nets, "Net");
   h += rankCard("Le Prophète", "écart à l'annonce", props, "Pts");
 
-  if (st.role === "reader") h += `<div style="text-align:center;padding:4px 0 8px">
-    <button class="btn ghost" data-act="adminlogin" style="width:auto;margin:0 auto">Administration</button></div>`;
+  const me = player(ls.get("jfd.me"));
+  h += `<div class="whoami">` +
+    (me ? `Vous êtes <b>${esc(me.nom)}</b>` : `Vous suivez le séjour en spectateur`) +
+    ` · <button data-act="changeme">changer</button>` +
+    (st.role === "admin" ? ` · <button data-act="logout">quitter l'administration</button>`
+                         : ` · <button data-act="adminlogin">administration</button>`) + `</div>`;
   return h;
 }
 function rankCard(title, sub, rows, unit) {
@@ -289,12 +318,16 @@ function markHtml() {
   const f = myFlight();
   if (!f) {
     return `<div class="card"><h2>Ma partie</h2><div class="empty">
-      Aucune partie ne vous est attribuée pour le moment.<br>
-      ${S.st.role === "admin" ? "Composez les parties dans Réglages." : "Quentin vous enverra un lien le matin."}</div></div>`;
+      Vous n'êtes marqueur d'aucune partie pour le moment.<br>
+      ${S.st.role === "admin" ? "Composez les parties dans Réglages." : "Quentin désigne les marqueurs la veille au soir."}</div></div>`;
   }
-  const r = S.st.myFlight.round, R = round(r);
+  const r = markRound(), R = round(r);
   const mk = player(f.marker);
-  const head = `<div class="hbar"><button data-act="prevstep"${S.step === 0 ? " disabled" : ""}>‹</button>
+  const g = myFlights();
+  const picker = g.length > 1
+    ? `<div class="pills">` + g.map((x) => `<button data-mround="${x.round}" aria-pressed="${x.round === r}">${esc(round(x.round).nom)}</button>`).join("") + `</div>`
+    : "";
+  const head = picker + `<div class="hbar"><button data-act="prevstep"${S.step === 0 ? " disabled" : ""}>‹</button>
     <span class="who">${esc(R.lieu)} · ${S.step === 0 ? "Prophète" : "Trou " + S.step}</span>
     <button data-act="recap">Récap</button></div>`;
 
@@ -503,8 +536,12 @@ document.addEventListener("click", async (e) => {
   if (b.dataset.sel) { S.boardSel = b.dataset.sel; render(); return; }
   if (b.dataset.croud) { S.carnetRound = b.dataset.croud; render(); return; }
   if (b.dataset.around) { S.adminRound = b.dataset.around; render(); window.scrollTo(0, 0); return; }
+  if (b.dataset.mround) { S.markRound = b.dataset.mround; S.step = 0; render(); window.scrollTo(0, 0); return; }
+  if (b.dataset.iam) { ls.set("jfd.me", b.dataset.iam); ls.del("jfd.guest"); S.tab = "board"; await load(); return; }
+  if (act === "guest") { ls.set("jfd.guest", "1"); ls.del("jfd.me"); S.tab = "board"; await load(); return; }
+  if (act === "changeme") { ls.del("jfd.me"); ls.del("jfd.guest"); ls.del("jfd.admin"); S.tab = "board"; await load(); return; }
   if (b.hasAttribute("data-hole")) { openSheet(S.carnetRound, +b.getAttribute("data-hole")); return; }
-  if (b.dataset.sheet) { openSheet(S.st.myFlight.round, +b.dataset.sheet); return; }
+  if (b.dataset.sheet) { openSheet(markRound(), +b.dataset.sheet); return; }
   if (act === "closesheet") { closeSheet(); return; }
 
   if (act === "claim") {
@@ -528,7 +565,7 @@ document.addEventListener("click", async (e) => {
 
   /* saisie */
   if (b.dataset.sc) {
-    const pid = b.dataset.sc, v = +b.dataset.v, r = S.st.myFlight.round, i = S.step;
+    const pid = b.dataset.sc, v = +b.dataset.v, r = markRound(), i = S.step;
     const k = r + "-" + pid;
     const cur = (S.st.scores[k] || {})[i] || 0;
     const nv = cur === v ? 0 : v;
@@ -541,13 +578,13 @@ document.addEventListener("click", async (e) => {
   }
   if (b.dataset.more) { S.more[b.dataset.more] = !S.more[b.dataset.more]; render(); return; }
   if (act === "nextstep") {
-    const n = nH(S.st.myFlight.round);
+    const n = nH(markRound());
     S.step = S.step === 0 ? 1 : S.step >= n ? 99 : S.step + 1;
     render(); window.scrollTo(0, 0); return;
   }
-  if (act === "prevstep") { S.step = S.step === 99 ? nH(S.st.myFlight.round) : Math.max(0, S.step - 1); render(); window.scrollTo(0, 0); return; }
+  if (act === "prevstep") { S.step = S.step === 99 ? nH(markRound()) : Math.max(0, S.step - 1); render(); window.scrollTo(0, 0); return; }
   if (act === "recap") { S.step = 99; render(); window.scrollTo(0, 0); return; }
-  if (act === "backholes") { S.step = nH(S.st.myFlight.round); render(); window.scrollTo(0, 0); return; }
+  if (act === "backholes") { S.step = nH(markRound()); render(); window.scrollTo(0, 0); return; }
 
   /* administration */
   if (b.dataset.copy) {
@@ -601,7 +638,7 @@ document.addEventListener("click", async (e) => {
 document.addEventListener("change", async (e) => {
   const t = e.target;
   if (t.dataset.an) {
-    const r = S.st.myFlight.round, v = parseInt(t.value, 10);
+    const r = markRound(), v = parseInt(t.value, 10);
     S.st.announces[r + "-" + t.dataset.an] = isNaN(v) ? null : v;
     await write("announce", { round: r, player: t.dataset.an, value: isNaN(v) ? 0 : v });
     return;

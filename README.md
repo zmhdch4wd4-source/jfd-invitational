@@ -5,7 +5,7 @@ Douze joueurs, trois parcours, trois classements — brut, net et « Le Prophèt
 
 ## Mise en ligne
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/zmhdch4wd4-source/jfd-invitational)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/OWNER/REPO)
 
 Le bouton recopie ce dépôt dans votre compte GitHub, **crée la base de données D1**, la relie
 à l'application et met le tout en ligne. Rien à saisir, rien à installer.

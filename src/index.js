@@ -39,7 +39,13 @@ function token(n = 12) {
   const a = "abcdefghjkmnpqrstuvwxyz23456789";
   return [...crypto.getRandomValues(new Uint8Array(n))].map((x) => a[x % a.length]).join("");
 }
-/** Résout le rôle du porteur : "admin", un objet partie, ou null. */
+/**
+ * Résout le rôle du porteur :
+ *   "admin"                                   — le code d'administration
+ *   {kind:"marker", id, grants:[{round,flight}]} — désigné marqueur, ou porteur d'un jeton
+ *   {kind:"player", id}                       — identifié, mais ne marque rien aujourd'hui
+ *   null                                      — anonyme
+ */
 async function auth(req, db) {
   const h = req.headers.get("x-jfd-auth") || "";
   if (h.startsWith("admin:")) {
@@ -47,20 +53,32 @@ async function auth(req, db) {
     if (stored && (await sha(h.slice(6))) === stored) return "admin";
     return null;
   }
+  const flights = await getSetting(db, "flights", {});
+  const grantsFor = (test) => {
+    const g = [];
+    for (const [round, list] of Object.entries(flights))
+      for (const f of list) if (test(f)) g.push({ round, flight: f });
+    return g;
+  };
   if (h.startsWith("token:")) {
     const t = h.slice(6);
-    const flights = await getSetting(db, "flights", {});
-    for (const [round, list] of Object.entries(flights))
-      for (const f of list) if (f.token === t) return { round, flight: f };
-    return null;
+    const g = grantsFor((f) => f.token === t);
+    return g.length ? { kind: "marker", id: g[0].flight.marker, grants: g } : null;
+  }
+  if (h.startsWith("player:")) {
+    const id = h.slice(7);
+    const players = await getSetting(db, "players", PLAYERS);
+    if (!players.some((p) => p.id === id)) return null;
+    const g = grantsFor((f) => f.marker === id);
+    return g.length ? { kind: "marker", id, grants: g } : { kind: "player", id };
   }
   return null;
 }
-/** Un marqueur n'écrit que pour les joueurs de sa partie, sur sa journée. */
+/** Un marqueur n'écrit que pour les joueurs de sa partie, et seulement sur la journée concernée. */
 function mayWrite(role, round, player) {
   if (role === "admin") return true;
-  if (!role) return false;
-  return role.round === round && role.flight.players.includes(player);
+  if (!role || role.kind !== "marker") return false;
+  return role.grants.some((g) => g.round === round && g.flight.players.includes(player));
 }
 
 /* -------------------------------------------------------------- lecture */
@@ -94,8 +112,11 @@ async function readState(db, role) {
       role === "admin" ? f : { id: f.id, players: f.players, marker: f.marker });
 
   return {
-    hasAdmin: !!adminHash, role: role === "admin" ? "admin" : role ? "marker" : "reader",
-    myFlight: role && role !== "admin" ? { round: role.round, id: role.flight.id } : null,
+    hasAdmin: !!adminHash,
+    role: role === "admin" ? "admin" : role && role.kind === "marker" ? "marker" : role ? "player" : "reader",
+    me: role && role !== "admin" ? role.id : null,
+    myFlights: role && role !== "admin" && role.kind === "marker"
+      ? role.grants.map((g) => ({ round: g.round, id: g.flight.id })) : [],
     players, teamMode, rounds, flights: safeFlights, scores, announces,
   };
 }
