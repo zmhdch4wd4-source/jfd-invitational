@@ -1,0 +1,657 @@
+/* JFD 70's Invitational — client */
+
+const $ = (s, r = document) => r.querySelector(s);
+const el = (h) => { const d = document.createElement("div"); d.innerHTML = h.trim(); return d.firstElementChild; };
+const esc = (t) => { const d = document.createElement("span"); d.textContent = t == null ? "" : String(t); return d.innerHTML; };
+const ls = {
+  get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+  del: (k) => { try { localStorage.removeItem(k); } catch {} },
+};
+const U = (p) => (window.IMGMAP && window.IMGMAP[p]) || "/" + p;
+const EQ = { b: { nom: "Les Bleus", cls: "b" }, v: { nom: "Les Verts", cls: "v" } };
+
+const S = {
+  st: null, tab: "board", boardSel: "cumul", carnetRound: "r3", carnetHole: 1,
+  step: 0, more: {}, inflight: 0, sheet: null,
+};
+
+/* ------------------------------------------------------------------ api */
+function authHeader() {
+  const a = ls.get("jfd.admin"); if (a) return "admin:" + a;
+  const t = ls.get("jfd.token"); if (t) return "token:" + t;
+  return "";
+}
+async function api(path, body) {
+  if (window.demoApi) return window.demoApi(path, body);
+  const h = { "x-jfd-auth": authHeader() };
+  let opt = { headers: h };
+  if (body !== undefined) {
+    opt = { method: "POST", headers: { ...h, "content-type": "application/json" }, body: JSON.stringify(body) };
+  }
+  const r = await fetch("/api/" + path, opt);
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || "Erreur réseau");
+  return d;
+}
+let toastT;
+function toast(msg, err) {
+  const old = $(".toast"); if (old) old.remove();
+  const t = el(`<div class="toast${err ? " err" : ""}">${esc(msg)}</div>`);
+  document.body.appendChild(t);
+  clearTimeout(toastT); toastT = setTimeout(() => t.remove(), err ? 4200 : 1800);
+}
+
+/* -------------------------------------------------------------- calculs */
+const round = (id) => S.st.rounds.find((r) => r.id === id) || S.st.rounds[0];
+const player = (id) => S.st.players.find((p) => p.id === id) || null;
+const nH = (r) => round(r).trous.length;
+const parTotal = (r) => round(r).trous.reduce((a, t) => a + t.par, 0);
+const card = (r, p) => S.st.scores[r + "-" + p] || {};
+const announce = (r, p) => S.st.announces[r + "-" + p] ?? null;
+const played = (r, p) => Object.keys(card(r, p)).length;
+const gross = (r, p) => Object.values(card(r, p)).reduce((a, b) => a + b, 0);
+const done = (r, p) => played(r, p) === nH(r);
+const rendus = (r, p) => { const q = player(p); return q ? Math.round(q.ix * nH(r) / 18) : 0; };
+const net = (r, p) => gross(r, p) - rendus(r, p);
+function toPar(r, p) {
+  const T = round(r).trous, c = card(r, p); let t = 0;
+  for (let i = 1; i <= T.length; i++) if (c[i]) t += c[i] - T[i - 1].par;
+  return t;
+}
+function proph(r, p) {
+  const a = announce(r, p);
+  return a == null || !done(r, p) ? null : Math.abs(a - gross(r, p));
+}
+function cumul(p) {
+  let g = 0, n = 0, pr = 0, cnt = 0, any = false;
+  for (const R of S.st.rounds) {
+    if (!done(R.id, p)) continue;
+    cnt++; g += gross(R.id, p); n += net(R.id, p);
+    const q = proph(R.id, p); if (q != null) { pr += q; any = true; }
+  }
+  return { g, n, pr: any ? pr : null, cnt };
+}
+const dTxt = (d) => (d === 0 ? "=" : d > 0 ? "+" + d : String(d));
+const dCls = (d) => (d <= -2 ? "e2" : d === -1 ? "e1" : d === 1 ? "b1" : d >= 2 ? "b2" : "");
+const sumPar = (r, a, b) => round(r).trous.slice(a - 1, b).reduce((x, t) => x + t.par, 0);
+function sumRange(r, p, a, b) {
+  const c = card(r, p); let t = 0, full = true;
+  for (let i = a; i <= b; i++) { if (!c[i]) full = false; t += c[i] || 0; }
+  return { t, full };
+}
+function myFlight() {
+  const f = S.st.myFlight;
+  if (!f) return null;
+  return (S.st.flights[f.round] || []).find((x) => x.id === f.id) || null;
+}
+
+/* ------------------------------------------------------------ chargement */
+async function load(silent) {
+  try {
+    const st = await api("state");
+    if (S.inflight > 0 && silent) return;
+    S.st = st;
+    render();
+  } catch (e) {
+    if (!silent) $("#view").innerHTML = `<div class="card"><div class="empty">Impossible de joindre le serveur.<br>${esc(e.message)}</div></div>`;
+  }
+}
+async function write(path, body, okMsg) {
+  S.inflight++;
+  try { await api(path, body); if (okMsg) toast(okMsg); }
+  catch (e) { toast(e.message, true); await load(); }
+  finally { S.inflight--; }
+}
+
+/* ------------------------------------------------------------------ vues */
+function render() {
+  const st = S.st;
+  const badge = $("#roleBadge");
+  const lbl = st.role === "admin" ? "Administrateur" : st.role === "marker" ? "Marqueur" : "";
+  badge.textContent = lbl; badge.hidden = !lbl;
+
+  const tabs = [["board", "Classement", `<path d="M4 19V9M10 19V4M16 19v-7"/>`], ["carnet", "Carnet", `<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3Z"/><path d="M5 17h14"/>`]];
+  if (st.role === "marker" || st.role === "admin") tabs.push(["mark", "Ma partie", `<path d="M5 3v18"/><path d="M5 4h12l-2 4 2 4H5"/>`]);
+  if (st.role === "admin") tabs.push(["admin", "Réglages", `<circle cx="12" cy="12" r="3"/><path d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6l1.4 1.4m10 10 1.4 1.4m0-12.8-1.4 1.4m-10 10L5.6 18.4"/>`]);
+  if (!tabs.some((t) => t[0] === S.tab)) S.tab = "board";
+  const nav = $("#tabs");
+  nav.hidden = false;
+  nav.innerHTML = tabs.map(([id, n, p]) =>
+    `<button data-tab="${id}" aria-selected="${S.tab === id}"><svg viewBox="0 0 24 24">${p}</svg>${esc(n)}</button>`).join("");
+
+  const v = $("#view");
+  v.innerHTML = S.tab === "board" ? boardHtml()
+    : S.tab === "carnet" ? carnetTabHtml()
+    : S.tab === "mark" ? markHtml()
+    : adminHtml();
+}
+
+/* ------------------------------------------------------------- classement */
+function boardHtml() {
+  const st = S.st;
+  let h = "";
+  if (!st.hasAdmin) {
+    h += `<div class="card"><h2>Première mise en route</h2><div class="pad">
+      <p class="sm muted" style="margin-top:0">Choisissez le code d'administration du séjour. Il vous donnera seul
+      le droit de composer les parties et de désigner les marqueurs. Notez-le quelque part.</p>
+      <label class="fl" for="newCode">Code d'administration</label>
+      <input id="newCode" type="text" autocomplete="off" placeholder="au moins 4 caractères">
+      <div style="height:9px"></div><button class="btn" data-act="claim">Enregistrer le code</button></div></div>`;
+  }
+  const sel = S.boardSel;
+  h += `<div class="pills">` +
+    [["cumul", "Cumul"], ...st.rounds.map((r) => [r.id, r.nom])]
+      .map(([id, n]) => `<button data-sel="${id}" aria-pressed="${sel === id}">${esc(n)}</button>`).join("") +
+    `</div>`;
+
+  h += sel === "cumul"
+    ? `<div class="card"><h2>Tableau du séjour <span class="sub">trois parcours</span></h2>${gridCumul()}</div>`
+    : `<div class="card"><h2>Tableau de marque <span class="sub">${esc(round(sel).lieu)}</span></h2>${gridRound(sel)}</div>`;
+
+  /* équipes */
+  const teams = ["b", "v"].map((e) => {
+    const vals = st.players.filter((p) => p.eq === e).map((p) =>
+      sel === "cumul" ? (cumul(p.id).cnt ? cumul(p.id).n : null) : (done(sel, p.id) ? net(sel, p.id) : null)
+    ).filter((x) => x != null).sort((a, b) => a - b);
+    const used = st.teamMode === "best4" ? vals.slice(0, 4) : vals;
+    return { e, tot: used.reduce((a, b) => a + b, 0), n: used.length, have: vals.length };
+  });
+  const lo = Math.min(...teams.filter((t) => t.n).map((t) => t.tot));
+  h += `<div class="card"><h2>Équipes <span class="sub">${st.teamMode === "best4" ? "4 meilleurs nets" : "somme des nets"}</span></h2>` +
+    (teams.some((t) => t.n)
+      ? teams.map((t) => `<div class="team"><span class="swatch ${EQ[t.e].cls}"></span>
+          <span class="nm">${esc(EQ[t.e].nom)}<br><span class="muted sm">${t.n ? t.n + " carte" + (t.n > 1 ? "s" : "") + " sur " + t.have : "en attente"}</span></span>
+          <span class="sc"${t.n && t.tot === lo ? ' style="color:var(--jaune)"' : ""}>${t.n ? t.tot : "—"}</span></div>`).join("")
+      : `<div class="empty">Aucune carte complète pour l'instant.</div>`) + `</div>`;
+
+  /* net / prophète */
+  const rows = (fn) => st.players.map((p) => fn(p)).filter(Boolean).sort((a, b) => a.v - b.v);
+  const nets = rows((p) => sel === "cumul"
+    ? (cumul(p.id).cnt ? { p, v: cumul(p.id).n, d: "brut " + cumul(p.id).g } : null)
+    : (done(sel, p.id) ? { p, v: net(sel, p.id), d: "brut " + gross(sel, p.id) + " · −" + rendus(sel, p.id) } : null));
+  const props = rows((p) => {
+    if (sel === "cumul") { const c = cumul(p.id); return c.pr == null ? null : { p, v: c.pr, d: c.cnt + " annonce" + (c.cnt > 1 ? "s" : "") }; }
+    const q = proph(sel, p.id);
+    return q == null ? null : { p, v: q, d: "annoncé " + announce(sel, p.id) + " · joué " + gross(sel, p.id) };
+  });
+  h += rankCard("Net", "les coups rendus déduits", nets, "Net");
+  h += rankCard("Le Prophète", "écart à l'annonce", props, "Pts");
+
+  if (st.role === "reader") h += `<div style="text-align:center;padding:4px 0 8px">
+    <button class="btn ghost" data-act="adminlogin" style="width:auto;margin:0 auto">Administration</button></div>`;
+  return h;
+}
+function rankCard(title, sub, rows, unit) {
+  if (!rows.length) return `<div class="card"><h2>${esc(title)} <span class="sub">${esc(sub)}</span></h2><div class="empty">Aucun parcours terminé.</div></div>`;
+  let pos = 0, prev = null, n = 0, body = "";
+  for (const r of rows) {
+    n++; if (prev === null || r.v !== prev) { pos = n; prev = r.v; }
+    body += `<tr${pos === 1 ? ' class="lead"' : ""}><td class="l pos">${pos}</td>
+      <td class="l"><span class="dot ${EQ[r.p.eq].cls}"></span> ${esc(r.p.nom)}${r.p.cap ? ' <span class="tag">Cap.</span>' : ""}</td>
+      <td style="font-weight:600">${r.v}</td><td class="muted sm">${esc(r.d)}</td></tr>`;
+  }
+  return `<div class="card"><h2>${esc(title)} <span class="sub">${esc(sub)}</span></h2>
+    <table class="rank"><thead><tr><th class="l" colspan="2">Joueur</th><th>${esc(unit)}</th><th>Détail</th></tr></thead>
+    <tbody>${body}</tbody></table></div>`;
+}
+function gridRound(r) {
+  const T = round(r).trous, n = T.length, full18 = n === 18;
+  const ord = S.st.players.map((p) => ({ p, j: played(r, p.id), tp: toPar(r, p.id) }))
+    .sort((a, b) => (!a.j !== !b.j ? (a.j ? -1 : 1) : a.tp - b.tp));
+  let h = `<div class="gridwrap"><table class="grid"><tbody><tr class="hd"><th class="nm">Trou</th>`;
+  for (let i = 1; i <= n; i++) h += `<th>${i}</th>` + (full18 && i === 9 ? `<th class="t">Aller</th>` : "");
+  h += (full18 ? `<th class="t">Retour</th>` : "") + `<th class="t">Tot</th><th class="tp">±</th></tr><tr class="par"><td class="nm">Par</td>`;
+  for (let i = 1; i <= n; i++) h += `<td>${T[i - 1].par}</td>` + (full18 && i === 9 ? `<td class="t">${sumPar(r, 1, 9)}</td>` : "");
+  h += (full18 ? `<td class="t">${sumPar(r, 10, 18)}</td>` : "") + `<td class="t">${parTotal(r)}</td><td class="tp">—</td></tr>`;
+  for (const o of ord) {
+    const c = card(r, o.p.id);
+    h += `<tr><td class="nm"><span class="dot ${EQ[o.p.eq].cls}"></span> ${esc(o.p.nom)}</td>`;
+    for (let i = 1; i <= n; i++) {
+      const v = c[i] || 0, d = v ? v - T[i - 1].par : null;
+      h += `<td class="${v ? dCls(d) : "nos"}">${v || "·"}</td>`;
+      if (full18 && i === 9) { const a = sumRange(r, o.p.id, 1, 9); h += `<td class="t">${a.full ? a.t : "·"}</td>`; }
+    }
+    if (full18) { const b = sumRange(r, o.p.id, 10, 18); h += `<td class="t">${b.full ? b.t : "·"}</td>`; }
+    h += `<td class="t">${o.j ? gross(r, o.p.id) : "·"}</td><td class="tp">${o.j ? dTxt(o.tp) : "·"}</td></tr>`;
+  }
+  return h + `</tbody></table></div><div class="leg">
+    <span><i class="e2"></i>Eagle ou mieux</span><span><i class="e1"></i>Birdie</span>
+    <span><i class="b1"></i>Bogey</span><span><i class="b2"></i>Double ou pire</span>
+    <span>± = écart au par sur les trous joués</span></div>`;
+}
+function gridCumul() {
+  const rows = S.st.players.map((p) => ({ p, c: cumul(p.id) }))
+    .sort((a, b) => (!a.c.cnt !== !b.c.cnt ? (a.c.cnt ? -1 : 1) : a.c.n - b.c.n));
+  let h = `<div class="gridwrap"><table class="grid"><tbody><tr class="hd"><th class="nm">Joueur</th>` +
+    S.st.rounds.map((R) => `<th style="min-width:46px">${esc(R.nom.replace("Jour ", "J"))}</th>`).join("") +
+    `<th class="t">Brut</th><th class="t">Net</th><th class="tp">Proph.</th></tr>`;
+  for (const o of rows) {
+    h += `<tr><td class="nm"><span class="dot ${EQ[o.p.eq].cls}"></span> ${esc(o.p.nom)}</td>`;
+    for (const R of S.st.rounds) {
+      const j = played(R.id, o.p.id), f = done(R.id, o.p.id);
+      h += `<td class="${f ? "" : "nos"}">${f ? gross(R.id, o.p.id) : j ? j + "tr" : "·"}</td>`;
+    }
+    h += `<td class="t">${o.c.cnt ? o.c.g : "·"}</td><td class="t">${o.c.cnt ? o.c.n : "·"}</td>
+      <td class="tp">${o.c.pr == null ? "·" : o.c.pr}</td></tr>`;
+  }
+  return h + `</tbody></table></div><div class="leg"><span>Seuls les parcours terminés comptent ; un parcours en cours affiche le nombre de trous joués.</span></div>`;
+}
+
+/* ---------------------------------------------------------------- carnet */
+function carnetTabHtml() {
+  const r = S.carnetRound;
+  let h = `<div class="pills">` + S.st.rounds.map((R) =>
+    `<button data-croud="${R.id}" aria-pressed="${r === R.id}">${esc(R.nom)}</button>`).join("") + `</div>`;
+  h += `<div class="card"><h2>${esc(round(r).lieu)} <span class="sub">${esc(round(r).jour)}</span></h2>
+    <div class="pad sm muted" style="padding-top:9px">Par ${parTotal(r)} · ${nH(r)} trous. Touchez un trou pour voir le plan, les repères de distance et le profil.</div>
+    <table class="rank"><thead><tr><th class="l">Trou</th><th>Par</th><th>Blancs</th><th>Jaunes</th></tr></thead><tbody>`;
+  round(r).trous.forEach((t, i) => {
+    h += `<tr data-hole="${i + 1}" style="cursor:pointer"><td class="l"><b>${i + 1}</b>${t.nom ? ` <span class="muted sm">${esc(t.nom)}</span>` : ""}</td>
+      <td>${t.par}</td><td>${t.no ? "<b>" + t.no + "</b>" : t.bl || "—"}</td><td>${t.no ? "noires" : t.ja || "—"}</td></tr>`;
+  });
+  return h + `</tbody></table></div>`;
+}
+function holeSheet(r, i) {
+  const t = round(r).trous[i - 1];
+  let h = `<div class="sheet" id="sheet"><div class="sh"><div class="in">
+      <h3>Trou ${i} · par ${t.par}</h3><button data-act="closesheet">Fermer</button></div></div><div class="body">`;
+  h += `<div class="whites"><b>Distances depuis les repères blancs</b>` +
+    (t.corr ? `<span>Depuis les jaunes, retrancher <b>${esc(t.corr)} m</b></span>` : "") + `</div>`;
+  h += t.img
+    ? `<div class="vis" data-zoom="${t.img}"><img src="${U(t.img)}" alt="Vue du trou ${i}"><span class="zx">Agrandir</span></div>`
+    : `<div class="vis" style="cursor:default"><div class="empty">Pas encore de visuel pour ce parcours.</div></div>`;
+  if (t.bl || t.no) h += `<div class="blk"><div class="bc"><div class="tees" style="padding:0;border:0">` +
+    (t.no ? `<div class="tee no" style="flex:2"><span class="k">Départ unique — barres noires</span><span class="v">${t.no} m</span></div>`
+          : `<div class="tee"><span class="k">Blancs</span><span class="v">${t.bl}</span></div>
+             <div class="tee ja"><span class="k">Jaunes</span><span class="v">${t.ja}</span></div>`) + `</div></div></div>`;
+  if (t.prof || t.pt || t.dn != null) {
+    h += `<div class="blk"><div class="bt">Profil</div><div class="bc">` +
+      (t.prof ? `<img class="pimg" src="${U(t.prof)}" alt="Profil du trou ${i}">` : "") +
+      (t.pt ? `<p>${esc(t.pt)}</p>` : "") +
+      (t.dn != null ? `<p class="muted">Dénivelé départ → green <b style="color:var(--ink)">${t.dn > 0 ? "+" + t.dn : t.dn} m</b></p>` : "") +
+      `</div></div>`;
+  }
+  if (t.obs && t.obs.length) h += `<div class="blk"><div class="bt">Repères depuis les blancs</div><div class="bc">` +
+    t.obs.map((o) => `<div class="ob"><span>${esc(o[0])}</span><span class="r">${esc(String(o[1]).replace("reste ", "→ "))}</span></div>`).join("") + `</div></div>`;
+  if (t.gr || t.corr || t.oy) {
+    h += `<div class="blk"><div class="bc">`;
+    if (t.gr) h += `<div class="ob"><span>Profondeur du green</span><span class="r">${esc(t.gr)} m</span></div>`;
+    if (t.oy) h += `<div class="oy"><b>OpenYardage</b> · ${esc(t.oy)}${/aucun/.test(t.oy) ? "" : " m"}</div>`;
+    h += `</div></div>`;
+  }
+  if (t.desc) h += `<div class="blk"><div class="bt">Le trou, selon le club</div><div class="bc"><p>${esc(t.desc)}</p></div></div>`;
+  return h + `</div></div>`;
+}
+
+/* ------------------------------------------------------- saisie marqueur */
+function markHtml() {
+  const f = myFlight();
+  if (!f) {
+    return `<div class="card"><h2>Ma partie</h2><div class="empty">
+      Aucune partie ne vous est attribuée pour le moment.<br>
+      ${S.st.role === "admin" ? "Composez les parties dans Réglages." : "Quentin vous enverra un lien le matin."}</div></div>`;
+  }
+  const r = S.st.myFlight.round, R = round(r);
+  const mk = player(f.marker);
+  const head = `<div class="hbar"><button data-act="prevstep"${S.step === 0 ? " disabled" : ""}>‹</button>
+    <span class="who">${esc(R.lieu)} · ${S.step === 0 ? "Prophète" : "Trou " + S.step}</span>
+    <button data-act="recap">Récap</button></div>`;
+
+  if (S.step === 0) {
+    let h = head + `<div class="card" style="border-color:var(--jaune);border-width:1.5px">
+      <div class="ph1"><span class="ey">Avant le départ du trou 1</span><h2>Le Prophète</h2>
+        <p>${esc(R.lieu)} · ${nH(r)} trous · par ${parTotal(r)}${mk ? " · marqueur : " + esc(mk.nom) : ""}</p></div>
+      <div class="rules"><ol>
+        <li>Chacun annonce à voix haute le score total qu'il va faire.</li>
+        <li>À l'arrivée, les points sont l'écart entre l'annoncé et le réalisé, dans un sens comme dans l'autre.</li>
+        <li>Le plus petit cumul sur les trois parcours est sacré Prophète du séjour.</li>
+        <li>Annonce exacte : tournée offerte.</li></ol></div>`;
+    for (const pid of f.players) {
+      const p = player(pid); if (!p) continue;
+      const hint = Math.round(parTotal(r) + p.ix * nH(r) / 18);
+      h += `<div class="anrow"><span class="nm"><span class="dot ${EQ[p.eq].cls}"></span> ${esc(p.nom)}
+        <span class="hint">index ${String(p.ix).replace(".", ",")} · par + index ≈ ${hint}</span></span>
+        <input type="number" inputmode="numeric" min="30" max="200" placeholder="—"
+          data-an="${pid}" value="${announce(r, pid) ?? ""}"></div>`;
+    }
+    return h + `</div><div class="pnav"><button class="go" data-act="nextstep">Commencer au trou 1 ›</button></div>`;
+  }
+
+  if (S.step === 99) return head + recapHtml(r, f);
+
+  const i = S.step, t = R.trous[i - 1];
+  let h = head + `<div class="card">
+    <div class="hhead"><span class="n">${i}</span><span class="meta">
+      ${t.nom ? `<span class="nom">${esc(t.nom)}</span>` : ""}
+      <span class="pr">Par ${t.par}${t.hcp ? " · hcp " + t.hcp : ""}</span></span>
+      <span class="cnt">Trou ${i}/${nH(r)}</span></div>`;
+  h += `<div class="tees">` + (t.no
+    ? `<div class="tee no" style="flex:2"><span class="k">Départ unique — barres noires</span><span class="v">${t.no} m</span></div>`
+    : t.bl ? `<div class="tee"><span class="k">Blancs</span><span class="v">${t.bl}</span></div>
+             <div class="tee ja"><span class="k">Jaunes</span><span class="v">${t.ja}</span></div>`
+           : `<div class="tee"><span class="k">Distances</span><span class="v">—</span></div>`) + `</div>`;
+  if (t.img) h += `<button class="seehole" data-sheet="${i}"><img src="${U(t.img)}" alt="">
+    <span class="t">Voir le trou, les repères et le profil</span><span class="c">›</span></button>`;
+
+  let all = true;
+  for (const pid of f.players) {
+    const p = player(pid); if (!p) continue;
+    const c = card(r, pid), v = c[i] || 0; if (!v) all = false;
+    const tp = toPar(r, pid), j = played(r, pid);
+    h += `<div class="pl"><div class="top"><span class="nm"><span class="dot ${EQ[p.eq].cls}"></span> ${esc(p.nom)}</span>
+      <span class="tot">${j ? `${j} tr · <b>${gross(r, pid)}</b> · ${dTxt(tp)}` : "pas encore joué"}</span></div>`;
+    h += `<div class="chips">`;
+    const labs = ["−2", "−1", "PAR", "+1", "+2", "+3"];
+    for (let k = 0; k < 6; k++) {
+      const s = t.par - 2 + k;
+      if (s < 1) { h += `<span></span>`; continue; }
+      const on = v === s, cl = s < t.par ? "g" : s > t.par ? "r" : "";
+      h += `<button data-sc="${pid}" data-v="${s}" class="${on ? "on " + cl : ""}"><small>${labs[k]}</small>${s}</button>`;
+    }
+    const over = v > t.par + 3;
+    h += `<button class="more ${over ? "on r" : ""}" data-more="${pid}">${over ? v : "…"}</button></div>`;
+    if (S.more[pid] || over) {
+      h += `<div class="chips" style="grid-template-columns:repeat(7,1fr);margin-top:4px">` +
+        [4, 5, 6, 7, 8, 9, 10].map((k) => {
+          const s = t.par + k; if (s > 20) return `<span></span>`;
+          return `<button data-sc="${pid}" data-v="${s}" class="${v === s ? "on r" : ""}">${s}</button>`;
+        }).join("") + `</div>`;
+    }
+    h += `</div>`;
+  }
+  h += `</div>`;
+  if (all) h += `<div class="allin" style="border:1px solid var(--rule);margin-top:-14px">Les quatre scores sont saisis.</div>`;
+  h += `<div class="pnav">
+    <button data-act="prevstep">${i === 1 ? "‹ Prophète" : "‹ Trou " + (i - 1)}</button>
+    <button class="${all ? "go" : ""}" data-act="nextstep">${i === nH(r) ? "Récapitulatif ›" : "Trou " + (i + 1) + " ›"}</button></div>`;
+  return h;
+}
+function recapHtml(r, f) {
+  const R = round(r), n = R.trous.length;
+  let h = `<div class="card"><h2>Carte de la partie <span class="sub">${esc(R.jour)}</span></h2>
+    <div class="gridwrap"><table class="grid"><tbody><tr class="hd"><th class="nm">Trou</th>`;
+  for (let i = 1; i <= n; i++) h += `<th>${i}</th>`;
+  h += `<th class="t">Tot</th><th class="tp">±</th></tr><tr class="par"><td class="nm">Par</td>`;
+  for (let i = 1; i <= n; i++) h += `<td>${R.trous[i - 1].par}</td>`;
+  h += `<td class="t">${parTotal(r)}</td><td class="tp">—</td></tr>`;
+  for (const pid of f.players) {
+    const p = player(pid); if (!p) continue;
+    const c = card(r, pid);
+    h += `<tr><td class="nm"><span class="dot ${EQ[p.eq].cls}"></span> ${esc(p.nom)}</td>`;
+    for (let i = 1; i <= n; i++) {
+      const v = c[i] || 0;
+      h += `<td class="${v ? dCls(v - R.trous[i - 1].par) : "nos"}">${v || "·"}</td>`;
+    }
+    h += `<td class="t">${played(r, pid) ? gross(r, pid) : "·"}</td><td class="tp">${played(r, pid) ? dTxt(toPar(r, pid)) : "·"}</td></tr>`;
+  }
+  h += `</tbody></table></div>`;
+  h += `<table class="rank"><thead><tr><th class="l">Joueur</th><th>Brut</th><th>Rendus</th><th>Net</th><th>Prophète</th></tr></thead><tbody>`;
+  for (const pid of f.players) {
+    const p = player(pid); if (!p) continue;
+    const q = proph(r, pid);
+    h += `<tr><td class="l">${esc(p.nom)}</td><td>${played(r, pid) ? gross(r, pid) : "—"}</td>
+      <td class="muted">${rendus(r, pid)}</td><td style="font-weight:600">${done(r, pid) ? net(r, pid) : "—"}</td>
+      <td>${q == null ? "—" : q === 0 ? '<span class="tag" style="border-color:var(--jaune);color:var(--jaune)">Exact</span>' : q}</td></tr>`;
+  }
+  return h + `</tbody></table></div>
+    <div class="pnav"><button data-act="backholes">‹ Revenir aux trous</button></div>`;
+}
+
+/* --------------------------------------------------------- administration */
+function adminHtml() {
+  const st = S.st;
+  const sel = S.adminRound || (S.adminRound = st.rounds[0].id);
+  let h = `<div class="pills">` + st.rounds.map((R) => {
+    const n = (st.flights[R.id] || []).filter((f) => f.players.filter(Boolean).length === 4).length;
+    return `<button data-around="${R.id}" aria-pressed="${sel === R.id}">${esc(R.nom)}${n === 3 ? " ✓" : ""}</button>`;
+  }).join("") + `</div>`;
+  for (const R of st.rounds) {
+    if (R.id !== sel) continue;
+    const list = st.flights[R.id] || [];
+    h += `<div class="card"><h2>${esc(R.nom)} <span class="sub">${esc(R.lieu)}</span></h2>`;
+    const used = new Set();
+    list.forEach((f) => f.players.forEach((p) => used.add(p)));
+    for (let k = 0; k < 3; k++) {
+      const f = list[k] || { id: "p" + (k + 1), players: [], marker: null };
+      h += `<div class="pad" style="padding-bottom:4px"><b>Partie ${k + 1}</b></div>`;
+      for (let s = 0; s < 4; s++) {
+        const cur = f.players[s] || "";
+        h += `<div class="fl2"><span class="n">${s + 1}</span><select data-fp="${R.id}|${k}|${s}">
+          <option value="">—</option>` +
+          st.players.map((p) => {
+            const taken = used.has(p.id) && p.id !== cur;
+            return `<option value="${p.id}"${p.id === cur ? " selected" : ""}${taken ? " disabled" : ""}>${esc(p.nom)}${taken ? " (déjà placé)" : ""}</option>`;
+          }).join("") + `</select></div>`;
+      }
+      h += `<div class="fl2"><span class="n" style="font-size:12px">M</span>
+        <select data-fm="${R.id}|${k}"><option value="">Marqueur —</option>` +
+        f.players.filter(Boolean).map((p) => `<option value="${p}"${f.marker === p ? " selected" : ""}>${esc((player(p) || {}).nom || p)}</option>`).join("") +
+        `</select></div>`;
+      if (f.token) {
+        const url = location.origin + "/#m=" + f.token;
+        h += `<div class="link"><code>${esc(url)}</code>
+          <button data-copy="${esc(url)}">Copier</button>
+          <button data-rotate="${R.id}|${k}">Nouveau</button></div>`;
+      }
+    }
+    h += `<div class="pad"><button class="btn" data-saveflights="${R.id}">Enregistrer les parties du ${esc(R.nom.toLowerCase())}</button>
+      <div style="height:8px"></div>
+      <button class="btn ghost" data-suggest="${R.id}">Proposer une rotation</button></div>`;
+    h += `<p class="note">La rotation proposée évite de replacer ensemble deux joueurs qui l'étaient déjà un autre jour.</p></div>`;
+  }
+
+  h += `<div class="card"><h2>Les joueurs <span class="sub">index et équipe</span></h2>
+    <div class="pad" style="padding-top:4px"><table class="cfg"><tr><th>Joueur</th><th>Index</th><th>Équipe</th></tr>` +
+    st.players.map((p) => `<tr><td>${esc(p.nom)}${p.cap ? ' <span class="tag">Cap.</span>' : ""}</td>
+      <td class="ix"><input type="number" step="0.1" min="0" max="54" value="${p.ix}" data-ix="${p.id}"></td>
+      <td class="tm"><select data-eq="${p.id}">
+        <option value="b"${p.eq === "b" ? " selected" : ""}>Bleus</option>
+        <option value="v"${p.eq === "v" ? " selected" : ""}>Verts</option></select></td></tr>`).join("") +
+    `</table></div>
+    <div class="pad"><label class="fl" for="tmode">Classement par équipe</label>
+      <select id="tmode"><option value="best4"${st.teamMode === "best4" ? " selected" : ""}>Les 4 meilleurs nets</option>
+      <option value="all"${st.teamMode === "all" ? " selected" : ""}>La somme des 6 nets</option></select></div>
+    <div class="pad" style="padding-top:0"><label class="fl">Jour 1 — pars du parcours, à confirmer</label>
+      <div class="parrow">` + st.rounds[0].trous.map((t, i) =>
+        `<label>${i + 1}<br><input type="number" min="3" max="6" value="${t.par}" data-par="${i}"></label>`).join("") +
+    `</div></div><div class="pad" style="padding-top:0"><button class="btn" data-act="saveplayers">Enregistrer</button></div></div>`;
+
+  h += `<div class="card"><h2>Zone sensible</h2>
+    <div class="pad">` + st.rounds.map((R) =>
+      `<button class="btn ghost" data-clear="${R.id}" style="margin-bottom:8px">Effacer tous les scores du ${esc(R.nom.toLowerCase())}</button>`).join("") +
+    `<button class="btn ghost" data-act="logout">Se déconnecter de l'administration</button></div></div>`;
+  return h;
+}
+/* rotation évitant les paires déjà jouées */
+function suggest(roundId) {
+  const ids = S.st.players.map((p) => p.id);
+  const seen = new Map();
+  for (const [rid, list] of Object.entries(S.st.flights)) {
+    if (rid === roundId) continue;
+    for (const f of list) for (const a of f.players) for (const b of f.players)
+      if (a !== b) seen.set(a + "|" + b, (seen.get(a + "|" + b) || 0) + 1);
+  }
+  let best = null;
+  for (let tries = 0; tries < 600; tries++) {
+    const pool = ids.slice();
+    for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+    const fl = [pool.slice(0, 4), pool.slice(4, 8), pool.slice(8, 12)];
+    let cost = 0;
+    for (const g of fl) for (const a of g) for (const b of g) if (a !== b) cost += seen.get(a + "|" + b) || 0;
+    // équilibre des index dans chaque partie
+    const avg = fl.map((g) => g.reduce((s, x) => s + (player(x) || {}).ix, 0) / 4);
+    cost += (Math.max(...avg) - Math.min(...avg)) * 0.4;
+    if (best === null || cost < best.cost) best = { cost, fl };
+    if (best.cost === 0) break;
+  }
+  return best.fl;
+}
+
+/* ------------------------------------------------------------ évènements */
+document.addEventListener("click", async (e) => {
+  const z = e.target.closest("[data-zoom]");
+  if (z) {
+    const o = el(`<div id="zoom"><img src="${U(z.getAttribute("data-zoom"))}" alt=""></div>`);
+    o.addEventListener("click", () => o.remove()); document.body.appendChild(o); return;
+  }
+  const b = e.target.closest("button,tr[data-hole]");
+  if (!b) return;
+  const act = b.getAttribute("data-act");
+
+  if (b.dataset.tab) { S.tab = b.dataset.tab; if (S.tab === "mark") S.step = S.step || 0; render(); window.scrollTo(0, 0); return; }
+  if (b.dataset.sel) { S.boardSel = b.dataset.sel; render(); return; }
+  if (b.dataset.croud) { S.carnetRound = b.dataset.croud; render(); return; }
+  if (b.dataset.around) { S.adminRound = b.dataset.around; render(); window.scrollTo(0, 0); return; }
+  if (b.hasAttribute("data-hole")) { openSheet(S.carnetRound, +b.getAttribute("data-hole")); return; }
+  if (b.dataset.sheet) { openSheet(S.st.myFlight.round, +b.dataset.sheet); return; }
+  if (act === "closesheet") { closeSheet(); return; }
+
+  if (act === "claim") {
+    const code = $("#newCode").value.trim();
+    if (code.length < 4) return toast("Quatre caractères au minimum.", true);
+    try { await api("claim", { code }); ls.set("jfd.admin", code); toast("Code enregistré."); await load(); }
+    catch (err) { toast(err.message, true); }
+    return;
+  }
+  if (act === "adminlogin") {
+    const code = window.prompt("Code d'administration");
+    if (!code) return;
+    try {
+      const r = await api("login", { code });
+      if (!r.ok) return toast("Code incorrect.", true);
+      ls.set("jfd.admin", code); toast("Bonjour Quentin."); S.tab = "admin"; await load();
+    } catch (err) { toast(err.message, true); }
+    return;
+  }
+  if (act === "logout") { ls.del("jfd.admin"); S.tab = "board"; await load(); return; }
+
+  /* saisie */
+  if (b.dataset.sc) {
+    const pid = b.dataset.sc, v = +b.dataset.v, r = S.st.myFlight.round, i = S.step;
+    const k = r + "-" + pid;
+    const cur = (S.st.scores[k] || {})[i] || 0;
+    const nv = cur === v ? 0 : v;
+    S.st.scores[k] = { ...(S.st.scores[k] || {}) };
+    if (nv) S.st.scores[k][i] = nv; else delete S.st.scores[k][i];
+    delete S.more[pid];
+    render();
+    await write("score", { round: r, player: pid, hole: i, strokes: nv });
+    return;
+  }
+  if (b.dataset.more) { S.more[b.dataset.more] = !S.more[b.dataset.more]; render(); return; }
+  if (act === "nextstep") {
+    const n = nH(S.st.myFlight.round);
+    S.step = S.step === 0 ? 1 : S.step >= n ? 99 : S.step + 1;
+    render(); window.scrollTo(0, 0); return;
+  }
+  if (act === "prevstep") { S.step = S.step === 99 ? nH(S.st.myFlight.round) : Math.max(0, S.step - 1); render(); window.scrollTo(0, 0); return; }
+  if (act === "recap") { S.step = 99; render(); window.scrollTo(0, 0); return; }
+  if (act === "backholes") { S.step = nH(S.st.myFlight.round); render(); window.scrollTo(0, 0); return; }
+
+  /* administration */
+  if (b.dataset.copy) {
+    try { await navigator.clipboard.writeText(b.dataset.copy); toast("Lien copié."); }
+    catch { toast("Copie impossible — sélectionnez le lien à la main.", true); }
+    return;
+  }
+  if (b.dataset.suggest) {
+    const rid = b.dataset.suggest, fl = suggest(rid);
+    S.st.flights[rid] = fl.map((players, k) => ({
+      ...(S.st.flights[rid] || [])[k], id: "p" + (k + 1), players,
+      marker: ((S.st.flights[rid] || [])[k] || {}).marker && players.includes((S.st.flights[rid][k] || {}).marker)
+        ? S.st.flights[rid][k].marker : players[0],
+    }));
+    render(); toast("Rotation proposée — pensez à enregistrer.");
+    return;
+  }
+  if (b.dataset.rotate) {
+    const [rid, k] = b.dataset.rotate.split("|");
+    const list = (S.st.flights[rid] || []).map((f, i) => ({ ...f, rotate: i === +k }));
+    await write("flights", { round: rid, flights: list }, "Nouveau lien généré."); await load();
+    return;
+  }
+  if (b.dataset.saveflights) {
+    const rid = b.dataset.saveflights;
+    const list = (S.st.flights[rid] || []).map((f) => ({ id: f.id, players: f.players.filter(Boolean), marker: f.marker }));
+    const flat = list.flatMap((f) => f.players);
+    if (new Set(flat).size !== flat.length) return toast("Un joueur figure dans deux parties.", true);
+    await write("flights", { round: rid, flights: list }, "Parties enregistrées."); await load();
+    return;
+  }
+  if (b.dataset.clear) {
+    if (!window.confirm("Effacer tous les scores de cette journée ? C'est définitif.")) return;
+    await write("clear", { round: b.dataset.clear }, "Scores effacés."); await load();
+    return;
+  }
+  if (act === "saveplayers") {
+    const players = S.st.players.map((p) => ({ ...p }));
+    document.querySelectorAll("[data-ix]").forEach((i) => {
+      const p = players.find((x) => x.id === i.dataset.ix); if (p && i.value) p.ix = parseFloat(i.value);
+    });
+    document.querySelectorAll("[data-eq]").forEach((s) => {
+      const p = players.find((x) => x.id === s.dataset.eq); if (p) p.eq = s.value;
+    });
+    const r1pars = [...document.querySelectorAll("[data-par]")].map((i) => Math.max(3, Math.min(6, +i.value || 4)));
+    await write("players", { players, teamMode: $("#tmode").value, r1pars }, "Enregistré."); await load();
+    return;
+  }
+});
+
+document.addEventListener("change", async (e) => {
+  const t = e.target;
+  if (t.dataset.an) {
+    const r = S.st.myFlight.round, v = parseInt(t.value, 10);
+    S.st.announces[r + "-" + t.dataset.an] = isNaN(v) ? null : v;
+    await write("announce", { round: r, player: t.dataset.an, value: isNaN(v) ? 0 : v });
+    return;
+  }
+  if (t.dataset.fp) {
+    const [rid, k, s] = t.dataset.fp.split("|");
+    const list = S.st.flights[rid] || (S.st.flights[rid] = []);
+    const f = list[+k] || (list[+k] = { id: "p" + (+k + 1), players: [], marker: null });
+    f.players[+s] = t.value || null;
+    render(); return;
+  }
+  if (t.dataset.fm) {
+    const [rid, k] = t.dataset.fm.split("|");
+    (S.st.flights[rid][+k]).marker = t.value || null;
+    return;
+  }
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") { const z = $("#zoom"); if (z) return z.remove(); closeSheet(); }
+});
+function openSheet(r, i) {
+  closeSheet();
+  document.body.appendChild(el(holeSheet(r, i)));
+  document.body.style.overflow = "hidden";
+}
+function closeSheet() {
+  const s = $("#sheet"); if (s) s.remove();
+  document.body.style.overflow = "";
+}
+
+/* ------------------------------------------------------------------ boot */
+(function boot() {
+  const m = location.hash.match(/^#m=([a-z0-9]+)$/i);
+  if (m) { ls.set("jfd.token", m[1]); history.replaceState(null, "", location.pathname); }
+  const splash = $("#splash");
+  const seen = sessionStorage.getItem("jfd.splash");
+  if (seen) splash.remove();
+  else {
+    sessionStorage.setItem("jfd.splash", "1");
+    const close = () => { splash.classList.add("out"); setTimeout(() => splash.remove(), 480); };
+    setTimeout(close, 2000);
+    splash.addEventListener("click", close);
+  }
+  load();
+  setInterval(() => {
+    if (document.visibilityState !== "visible") return;
+    const a = document.activeElement;
+    if (a && (a.tagName === "INPUT" || a.tagName === "SELECT")) return;
+    if (S.inflight > 0) return;
+    load(true);
+  }, 8000);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") load(true); });
+})();
