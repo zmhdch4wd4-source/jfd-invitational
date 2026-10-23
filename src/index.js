@@ -83,13 +83,14 @@ function mayWrite(role, round, player) {
 
 /* -------------------------------------------------------------- lecture */
 async function readState(db, role) {
-  const [players, teamMode, r1pars, flights, adminHash, proposals, sc, an] = await Promise.all([
+  const [players, teamMode, r1pars, flights, adminHash, proposals, locked, sc, an] = await Promise.all([
     getSetting(db, "players", PLAYERS),
     getSetting(db, "teamMode", "best4"),
     getSetting(db, "r1pars", null),
     getSetting(db, "flights", {}),
     getSetting(db, "adminHash", null),
     getSetting(db, "proposals", {}),
+    getSetting(db, "locked", {}),
     db.prepare(`SELECT round, player, hole, strokes FROM scores`).all(),
     db.prepare(`SELECT round, player, value FROM announces`).all(),
   ]);
@@ -119,7 +120,7 @@ async function readState(db, role) {
     role: role === "admin" ? "admin" : role && role.kind === "marker" ? "marker" : role ? "player" : "reader",
     me: meId,
     captainOf: mePl && mePl.cap ? mePl.eq : null,
-    proposals,
+    proposals, locked,
     myFlights: role && role !== "admin" && role.kind === "marker"
       ? role.grants.map((g) => ({ round: g.round, id: g.flight.id })) : [],
     players, teamMode, rounds, flights: safeFlights, scores, announces,
@@ -189,6 +190,10 @@ export default {
           if (role !== "admin" && !(me && me.cap && me.eq === team))
             return bad("Réservé au capitaine de cette équipe.", 403);
           if (!body.round) return bad("Parcours manquant.");
+          if (role !== "admin") {
+            const lk = await getSetting(db, "locked", {});
+            if (lk[body.round]) return bad("Cette journée a été validée par l'organisateur.", 403);
+          }
           const mine = new Set(players.filter((p) => p.eq === team).map((p) => p.id));
           const groups = (body.flights || []).slice(0, 3).map((g) =>
             (g || []).filter((x) => mine.has(x)).slice(0, 2));
@@ -224,11 +229,30 @@ export default {
             token: (!f.rotate && (prev.find((p) => p.id === (f.id || "p" + (i + 1))) || {}).token) || token(),
           }));
           await setSetting(db, "flights", all);
-          return json({ ok: true, flights: all[body.round] });
+          const complete = all[body.round].length === 3 &&
+            all[body.round].every((f) => f.players.length === 4);
+          const lk = await getSetting(db, "locked", {});
+          if (complete !== !!lk[body.round]) {
+            lk[body.round] = complete;
+            await setSetting(db, "locked", lk);
+          }
+          return json({ ok: true, flights: all[body.round], locked: complete });
+        }
+        case "/api/lock": {
+          if (role !== "admin") return bad("Réservé à l'administrateur.", 403);
+          if (!body.round) return bad("Parcours manquant.");
+          const lk = await getSetting(db, "locked", {});
+          lk[body.round] = !!body.locked;
+          await setSetting(db, "locked", lk);
+          return json({ ok: true });
         }
         case "/api/clear": {
           if (role !== "admin") return bad("Réservé à l'administrateur.", 403);
           if (!body.round) return bad("Parcours manquant.");
+          if (role !== "admin") {
+            const lk = await getSetting(db, "locked", {});
+            if (lk[body.round]) return bad("Cette journée a été validée par l'organisateur.", 403);
+          }
           await db.batch([
             db.prepare(`DELETE FROM scores WHERE round = ?`).bind(body.round),
             db.prepare(`DELETE FROM announces WHERE round = ?`).bind(body.round),

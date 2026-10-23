@@ -553,18 +553,27 @@ function capHtml() {
   const placed = g.flat().filter(Boolean);
   const reste = squad.filter((p) => !placed.includes(p.id));
 
+  const lock = !!((S.st.locked || {})[sel]);
   let h = `<div class="hi" style="margin-bottom:14px"><h2>${esc(EQ[team].nom)}</h2>
-    <p>Répartissez vos six joueurs dans les trois parties. Quentin assemble ensuite
-    votre composition avec celle de l'autre capitaine.</p></div>`;
+    <p>${lock
+      ? "Cette journée a été validée par Quentin : la composition est figée. Les autres journées restent modifiables."
+      : "Répartissez vos six joueurs dans les trois parties. Quentin assemble ensuite votre composition avec celle de l'autre capitaine."}</p></div>`;
   h += `<div class="pills">` + S.st.rounds.map((R) => {
     const done3 = propOf(R.id, team).filter((x) => x[0] && x[1]).length === 3;
-    return `<button data-capround="${R.id}" aria-pressed="${sel === R.id}">${esc(R.nom)}${done3 ? " ✓" : ""}</button>`;
+    const lk = !!((S.st.locked || {})[R.id]);
+    return `<button data-capround="${R.id}" aria-pressed="${sel === R.id}">${esc(R.nom)}${lk ? " 🔒" : done3 ? " ✓" : ""}</button>`;
   }).join("") + `</div>`;
 
   const dirtyC = !!((S.draftProp || {})[sel] || {})[team];
   h += `<div class="card"><h2>${esc(round(sel).lieu)} <span class="sub">${
-    dirtyC ? '<span class="unsaved">non enregistré</span>' : esc(round(sel).jour)}</span></h2>`;
+    lock ? '<span style="color:var(--jaune)">validée</span>'
+         : dirtyC ? '<span class="unsaved">non enregistré</span>' : esc(round(sel).jour)}</span></h2>`;
   for (let k = 0; k < 3; k++) {
+    if (lock) {
+      h += `<div class="team"><span class="swatch ${EQ[team].cls}"></span><span class="nm">Partie ${k + 1}<br>
+        <span class="muted sm">${esc(g[k].map((x) => (player(x) || {}).nom || "—").join(" et "))}</span></span></div>`;
+      continue;
+    }
     h += `<div class="pad" style="padding-bottom:4px"><b>Partie ${k + 1}</b></div>`;
     for (let s = 0; s < 2; s++) {
       const cur = g[k][s];
@@ -575,8 +584,8 @@ function capHtml() {
       }).join("") + `</select></div>`;
     }
   }
-  if (reste.length) h += `<p class="note" style="padding-top:10px">Pas encore placés : ${esc(reste.map((p) => p.nom).join(", "))}.</p>`;
-  h += `<div class="pad"><button class="btn" data-saveprop="${sel}">Enregistrer ma composition</button>
+  if (!lock && reste.length) h += `<p class="note" style="padding-top:10px">Pas encore placés : ${esc(reste.map((p) => p.nom).join(", "))}.</p>`;
+  h += lock ? `<p class="note" style="padding-top:12px">Pour rouvrir cette journée, demandez à Quentin.</p></div>` : `<div class="pad"><button class="btn" data-saveprop="${sel}">Enregistrer ma composition</button>
     <div style="height:8px"></div>
     <button class="btn ghost" data-capsuggest="${sel}">Proposer une répartition</button>
     <div style="height:8px"></div>
@@ -643,8 +652,14 @@ function adminHtml() {
     h += (full(pb) && full(pv))
       ? `<div class="pad" style="padding-top:8px"><button class="btn gold" data-useprop="${R.id}">Reprendre les deux compositions</button></div>`
       : `<p class="note" style="padding:8px 14px 12px">Vous pouvez composer sans attendre : reprendre les propositions ne fait que pré-remplir les places.</p>`;
+    const lk = !!((st.locked || {})[R.id]);
+    h += `<div class="pad" style="padding-top:0">
+      <button class="btn ghost" data-lock="${R.id}|${lk ? 0 : 1}">${lk
+        ? "🔒 Journée verrouillée — rouvrir aux capitaines"
+        : "Verrouiller la composition des capitaines"}</button>`;
     if (pb.some((x) => x[0] || x[1]) || pv.some((x) => x[0] || x[1]))
-      h += `<div class="pad" style="padding-top:0"><button class="btn ghost" data-clearprops="${R.id}">Effacer les propositions des deux capitaines</button></div>`;
+      h += `<div style="height:8px"></div><button class="btn ghost" data-clearprops="${R.id}">Effacer les propositions des deux capitaines</button>`;
+    h += `</div>`;
     h += `</div>`;
     const used = new Set();
     list.forEach((f) => f.players.forEach((p) => used.add(p)));
@@ -750,6 +765,12 @@ document.addEventListener("click", async (e) => {
     setProp(rid, tm, capSuggest(rid, tm));
     render(); toast("Répartition proposée — pensez à enregistrer.");
     return;
+  }
+  if (b.dataset.lock) {
+    const [rid, v] = b.dataset.lock.split("|");
+    await write("lock", { round: rid, locked: v === "1" },
+      v === "1" ? "Journée verrouillée." : "Journée rouverte aux capitaines.");
+    await load(); return;
   }
   if (b.dataset.clearprop) {
     const rid = b.dataset.clearprop, tm = S.st.captainOf;
