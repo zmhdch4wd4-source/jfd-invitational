@@ -265,11 +265,7 @@ function boardHtml() {
       .map(([id, n]) => `<button data-sel="${id}" aria-pressed="${sel === id}">${esc(n)}</button>`).join("") +
     `</div>`;
 
-  h += sel === "cumul"
-    ? `<div class="card"><h2>Tableau du séjour <span class="sub">trois parcours</span></h2>${gridCumul()}</div>`
-    : `<div class="card"><h2>Tableau de marque <span class="sub">${esc(round(sel).lieu)}</span></h2>${gridRound(sel)}</div>`;
-
-  /* équipes */
+  /* le duel des équipes ouvre la page, avant le détail individuel */
   const teams = ["b", "v"].map((e) => {
     const vals = st.players.filter((p) => p.eq === e).map((p) =>
       sel === "cumul" ? (cumul(p.id).cnt ? cumul(p.id).n : null) : (done(sel, p.id) ? net(sel, p.id) : null)
@@ -284,6 +280,10 @@ function boardHtml() {
           <span class="nm">${esc(EQ[t.e].nom)}<br><span class="muted sm">${t.n ? t.n + " carte" + (t.n > 1 ? "s" : "") + " sur " + t.have : "en attente"}</span></span>
           <span class="sc"${t.n && t.tot === lo ? ' style="color:var(--jaune)"' : ""}>${t.n ? t.tot : "—"}</span></div>`).join("")
       : `<div class="empty">Aucune carte complète pour l'instant.</div>`) + `</div>`;
+
+  h += sel === "cumul"
+    ? `<div class="card"><h2>Tableau du séjour <span class="sub">trois parcours</span></h2>${gridCumul()}</div>`
+    : `<div class="card"><h2>Tableau de marque <span class="sub">${esc(round(sel).lieu)}</span></h2>${gridRound(sel)}</div>`;
 
   /* net / prophète */
   const rows = (fn) => st.players.map((p) => fn(p)).filter(Boolean).sort((a, b) => a.v - b.v);
