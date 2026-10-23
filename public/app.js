@@ -578,7 +578,9 @@ function capHtml() {
   if (reste.length) h += `<p class="note" style="padding-top:10px">Pas encore placés : ${esc(reste.map((p) => p.nom).join(", "))}.</p>`;
   h += `<div class="pad"><button class="btn" data-saveprop="${sel}">Enregistrer ma composition</button>
     <div style="height:8px"></div>
-    <button class="btn ghost" data-capsuggest="${sel}">Proposer une répartition</button></div>
+    <button class="btn ghost" data-capsuggest="${sel}">Proposer une répartition</button>
+    <div style="height:8px"></div>
+    <button class="btn ghost" data-clearprop="${sel}">Effacer ma composition</button></div>
     <p class="note">La répartition proposée évite de refaire jouer ensemble deux joueurs déjà associés un autre jour, et équilibre les index entre les trois parties.</p></div>`;
 
   /* ce que l'autre capitaine a fait */
@@ -641,6 +643,8 @@ function adminHtml() {
     h += (full(pb) && full(pv))
       ? `<div class="pad" style="padding-top:8px"><button class="btn gold" data-useprop="${R.id}">Reprendre les deux compositions</button></div>`
       : `<p class="note" style="padding:8px 14px 12px">Vous pouvez composer sans attendre : reprendre les propositions ne fait que pré-remplir les places.</p>`;
+    if (pb.some((x) => x[0] || x[1]) || pv.some((x) => x[0] || x[1]))
+      h += `<div class="pad" style="padding-top:0"><button class="btn ghost" data-clearprops="${R.id}">Effacer les propositions des deux capitaines</button></div>`;
     h += `</div>`;
     const used = new Set();
     list.forEach((f) => f.players.forEach((p) => used.add(p)));
@@ -746,6 +750,21 @@ document.addEventListener("click", async (e) => {
     setProp(rid, tm, capSuggest(rid, tm));
     render(); toast("Répartition proposée — pensez à enregistrer.");
     return;
+  }
+  if (b.dataset.clearprop) {
+    const rid = b.dataset.clearprop, tm = S.st.captainOf;
+    if (!window.confirm("Effacer votre composition pour cette journée ?")) return;
+    if (S.draftProp && S.draftProp[rid]) delete S.draftProp[rid][tm];
+    await write("proposal", { round: rid, team: tm, flights: [[], [], []] }, "Composition effacée.");
+    await load(); return;
+  }
+  if (b.dataset.clearprops) {
+    const rid = b.dataset.clearprops;
+    if (!window.confirm("Effacer les propositions des deux capitaines pour cette journée ?")) return;
+    if (S.draftProp) delete S.draftProp[rid];
+    await write("proposal", { round: rid, team: "b", flights: [[], [], []] });
+    await write("proposal", { round: rid, team: "v", flights: [[], [], []] }, "Propositions effacées.");
+    await load(); return;
   }
   if (b.dataset.saveprop) {
     const rid = b.dataset.saveprop, tm = S.st.captainOf, g = propOf(rid, tm);
