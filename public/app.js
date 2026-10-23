@@ -46,6 +46,12 @@ function toast(msg, err) {
 /* -------------------------------------------------------------- calculs */
 const round = (id) => S.st.rounds.find((r) => r.id === id) || S.st.rounds[0];
 const player = (id) => S.st.players.find((p) => p.id === id) || null;
+/* Les journées portent le nom du parcours ; celle dont le parcours reste à
+   choisir garde « Jour 1 », d'où les deux tournures ci-dessous. */
+const rTBD = (R) => /^Jour/i.test(R.nom || "");
+const rLe = (R) => (rTBD(R) ? "le " + R.nom.toLowerCase() : R.nom);
+const rDe = (R) => rTBD(R) ? "du " + R.nom.toLowerCase()
+  : (/^[aeiouyàâéèêîïôöùû]/i.test(R.nom) ? "d'" : "de ") + R.nom;
 const nH = (r) => round(r).trous.length;
 const parTotal = (r) => round(r).trous.reduce((a, t) => a + t.par, 0);
 const card = (r, p) => S.st.scores[r + "-" + p] || {};
@@ -219,7 +225,7 @@ function greetingParts() {
       const g = ((st.proposals || {})[R.id] || {})[cap] || [];
       return g.filter((x) => (x || []).length === 2).length < 3;
     });
-    if (manque.length) lines.push(`Votre composition reste à faire pour ${esc(manque.map((R) => "le " + R.nom.toLowerCase()).join(" et "))}.`);
+    if (manque.length) lines.push(`Votre composition reste à faire pour ${esc(manque.map(rLe).join(" et "))}.`);
   }
   if (f && announce(markRound(), me.id) == null)
     lines.push(`Pensez à recueillir les annonces du Prophète avant le départ du 1.`);
@@ -638,7 +644,8 @@ function adminHtml() {
     if (R.id !== sel) continue;
     const list = flightsOf(R.id);
     h += `<div class="card"><h2>${esc(R.nom)} <span class="sub">${
-      (S.draftFlights || {})[R.id] ? '<span class="unsaved">non enregistré</span>' : esc(R.lieu)}</span></h2>`;
+      (S.draftFlights || {})[R.id] ? '<span class="unsaved">non enregistré</span>'
+        : esc(rTBD(R) ? R.lieu : R.jour)}</span></h2>`;
     /* ce que les capitaines ont proposé */
     const pb = propOf(R.id, "b"), pv = propOf(R.id, "v");
     const full = (g) => g.filter((x) => x[0] && x[1]).length === 3;
@@ -690,7 +697,7 @@ function adminHtml() {
     if (sansMk) h += `<p class="note" style="padding:4px 14px 10px;color:var(--rouge)">
       ${sansMk === 1 ? "Une partie n'a pas de marqueur" : sansMk + " parties n'ont pas de marqueur"} :
       personne ne pourra y saisir de score.</p>`;
-    h += `<div class="pad"><button class="btn" data-saveflights="${R.id}">Enregistrer les parties du ${esc(R.nom.toLowerCase())}</button>
+    h += `<div class="pad"><button class="btn" data-saveflights="${R.id}">Enregistrer les parties ${esc(rDe(R))}</button>
       <div style="height:8px"></div>
       <button class="btn ghost" data-suggest="${R.id}">Proposer une rotation</button></div>`;
     h += `<p class="note">La rotation proposée évite de replacer ensemble deux joueurs qui l'étaient déjà un autre jour.</p></div>`;
@@ -714,7 +721,7 @@ function adminHtml() {
 
   h += `<div class="card"><h2>Zone sensible</h2>
     <div class="pad">` + st.rounds.map((R) =>
-      `<button class="btn ghost" data-clear="${R.id}" style="margin-bottom:8px">Effacer tous les scores du ${esc(R.nom.toLowerCase())}</button>`).join("") +
+      `<button class="btn ghost" data-clear="${R.id}" style="margin-bottom:8px">Effacer tous les scores ${esc(rDe(R))}</button>`).join("") +
     `<button class="btn ghost" data-act="logout">Se déconnecter de l'administration</button></div></div>`;
   return h;
 }

@@ -37,7 +37,7 @@ export const ROUNDS = [
 },
 {
 "id": "r2",
-"nom": "Jour 2",
+"nom": "Logroño",
 "lieu": "El Campo de Logroño",
 "jour": "Mercredi 17 mars",
 "trous": [
@@ -171,7 +171,7 @@ export const ROUNDS = [
 },
 {
 "id": "r3",
-"nom": "Jour 3",
+"nom": "Izki",
 "lieu": "Izki Golf",
 "jour": "Jeudi 18 mars",
 "trous": [
