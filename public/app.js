@@ -52,6 +52,25 @@ const rTBD = (R) => /^Jour/i.test(R.nom || "");
 const rLe = (R) => (rTBD(R) ? "le " + R.nom.toLowerCase() : R.nom);
 const rDe = (R) => rTBD(R) ? "du " + R.nom.toLowerCase()
   : (/^[aeiouyàâéèêîïôöùû]/i.test(R.nom) ? "d'" : "de ") + R.nom;
+
+/* Départ de Vélines : mardi 16 mars 2027 à 8 h (heure d'hiver, +01:00). */
+const DEPART = new Date("2027-03-16T08:00:00+01:00");
+function untilDepart() {
+  let s = Math.floor((DEPART.getTime() - Date.now()) / 1000);
+  if (s <= 0) return null;
+  const d = Math.floor(s / 86400); s -= d * 86400;
+  const h = Math.floor(s / 3600); s -= h * 3600;
+  const m = Math.floor(s / 60);
+  return { d, h, m, s: s - m * 60 };
+}
+function countdownHtml() {
+  const c = untilDepart();
+  if (!c) return "";
+  const cell = (v, l) => `<div><b>${String(v).padStart(2, "0")}</b><span>${l}</span></div>`;
+  return `<div class="cdlead">Départ dans</div><div class="cdown" id="cdown">` +
+    cell(c.d, c.d > 1 ? "jours" : "jour") + cell(c.h, "heures") +
+    cell(c.m, "minutes") + cell(c.s, "secondes") + `</div>`;
+}
 const nH = (r) => round(r).trous.length;
 const parTotal = (r) => round(r).trous.reduce((a, t) => a + t.par, 0);
 const card = (r, p) => S.st.scores[r + "-" + p] || {};
@@ -229,8 +248,10 @@ function greetingParts() {
   }
   if (f && announce(markRound(), me.id) == null)
     lines.push(`Pensez à recueillir les annonces du Prophète avant le départ du 1.`);
-  if (!lines.length) lines.push(`Le séjour n'a pas encore commencé. Bonne route.`);
-  return { hello, cap, lines: lines.slice(0, 3) };
+  /* avant le premier coup de départ : le compte à rebours remplace la phrase d'attente */
+  const cd = !r && untilDepart() !== null;
+  if (!lines.length && !cd) lines.push(`Le séjour n'a pas encore commencé. Bonne route.`);
+  return { hello, cap, cd, prenom: me.nom, lines: lines.slice(0, 3) };
 }
 
 /* page d'accueil plein écran, refermée d'une touche */
@@ -247,9 +268,20 @@ function maybeWelcome() {
       <h2>${g.hello}</h2>
       ${g.cap ? `<div class="cap">Capitaine · ${esc(EQ[g.cap].nom)}</div>` : ""}
       <div class="rule"></div>
+      ${g.cd ? countdownHtml() +
+        `<p class="cdfoot">Mardi 16 mars 2027, 8 h — en route pour la Rioja, ${esc(g.prenom)}.</p>` : ""}
       ${g.lines.map((l) => `<p>${l}</p>`).join("")}
     </div><div class="tap">Touchez l'écran pour continuer</div></div>`);
-  const close = () => { o.classList.add("out"); setTimeout(() => o.remove(), 380); };
+  let tick = 0;
+  const close = () => {
+    if (tick) clearInterval(tick);
+    o.classList.add("out"); setTimeout(() => o.remove(), 380);
+  };
+  if (g.cd) tick = setInterval(() => {
+    const c = untilDepart(), b = o.querySelectorAll("#cdown b");
+    if (!c || !b.length) return clearInterval(tick);
+    [c.d, c.h, c.m, c.s].forEach((v, i) => { b[i].textContent = String(v).padStart(2, "0"); });
+  }, 1000);
   o.addEventListener("click", close);
   document.body.appendChild(o);
 }
