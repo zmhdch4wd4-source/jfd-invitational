@@ -163,7 +163,17 @@ export const ROUNDS = [
     "bl": 345,
     "ja": 323,
     "img": "img/logrono-07.jpg",
-    "gr": "13"
+    "gr": "13",
+    "obs": [
+     [
+      "Aucun bunker en jeu",
+      "—"
+     ],
+     [
+      "Coude : 274 m en ligne droite au green",
+      "345 m par le fairway"
+     ]
+    ]
    },
    {
     "par": 3,
