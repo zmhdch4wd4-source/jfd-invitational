@@ -483,14 +483,25 @@ function carnetTabHtml() {
   });
   return h + `</tbody></table></div>`;
 }
+/** Le visuel du trou, enveloppé au plus près de l'image pour que les
+ *  pastilles tombent au bon endroit quelle que soit la taille affichée. */
+function pinsHtml(t) {
+  return (t.pins || []).map(([x, y, a, b, side]) =>
+    `<span class="pin${(side || (x > 50 ? "l" : "r")) === "l" ? " l" : ""}" style="left:${x}%;top:${y}%">
+       <i></i><em>${esc(a)}${b ? `<b>${esc(b)}</b>` : ""}</em></span>`).join("");
+}
+function framed(t, i) {
+  return `<span class="vw"><img src="${U(t.img)}" alt="Vue du trou ${i}">${pinsHtml(t)}</span>`;
+}
 function holeSheet(r, i) {
   const t = round(r).trous[i - 1];
   let h = `<div class="sheet" id="sheet"><div class="sh"><div class="in">
       <h3>Trou ${i} · par ${t.par}</h3><button data-act="closesheet">Fermer</button></div></div><div class="body">`;
+  /* visuel + pastilles de distance posées sur les repères */
   h += `<div class="whites"><b>Distances depuis les repères blancs</b>` +
     (t.corr ? `<span>Depuis les jaunes, retrancher <b>${esc(t.corr)} m</b></span>` : "") + `</div>`;
   h += t.img
-    ? `<div class="vis" data-zoom="${t.img}"><img src="${U(t.img)}" alt="Vue du trou ${i}"><span class="zx">Agrandir</span></div>`
+    ? `<div class="vis" data-zoom="${t.img}" data-zr="${r}|${i}">${framed(t, i)}<span class="zx">Agrandir</span></div>`
     : `<div class="vis" style="cursor:default"><div class="empty">Pas encore de visuel pour ce parcours.</div></div>`;
   if (t.bl || t.no) h += `<div class="blk"><div class="bc"><div class="tees" style="padding:0;border:0">` +
     (t.no ? `<div class="tee no" style="flex:2"><span class="k">Départ unique — barres noires</span><span class="v">${t.no} m</span></div>`
@@ -855,7 +866,10 @@ function suggest(roundId) {
 document.addEventListener("click", async (e) => {
   const z = e.target.closest("[data-zoom]");
   if (z) {
-    const o = el(`<div id="zoom"><img src="${U(z.getAttribute("data-zoom"))}" alt=""></div>`);
+    const zr = (z.getAttribute("data-zr") || "").split("|");
+    const zt = zr.length === 2 ? round(zr[0]).trous[+zr[1] - 1] : null;
+    const o = el(`<div id="zoom"><span class="vw"><img src="${U(z.getAttribute("data-zoom"))}" alt="">` +
+      (zt ? pinsHtml(zt) : "") + `</span></div>`);
     o.addEventListener("click", () => o.remove()); document.body.appendChild(o); return;
   }
   const b = e.target.closest("button,tr[data-hole]");

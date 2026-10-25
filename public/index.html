@@ -312,6 +312,24 @@ table.rank tr.lead td{background:color-mix(in srgb,var(--jaune) 12%,transparent)
 #zoom{position:fixed;inset:0;z-index:45;background:rgba(0,0,0,.93);display:flex;align-items:center;
   justify-content:center;padding:12px;cursor:zoom-out}
 #zoom img{max-width:100%;max-height:100%;object-fit:contain}
+#zoom .vw{max-width:100%;max-height:100%}
+
+/* ----------------------------------------- pastilles posées sur le visuel */
+.vw{position:relative;display:inline-block;line-height:0;font-size:0}
+.vw img{display:block}
+.pin{position:absolute;width:0;height:0;pointer-events:none;z-index:2}
+.pin i{position:absolute;left:-6px;top:-6px;width:8px;height:8px;border-radius:50%;
+  background:#c0392b;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.55)}
+.pin em{position:absolute;top:0;left:12px;transform:translateY(-50%);
+  font-style:normal;white-space:nowrap;line-height:1.2;
+  background:rgba(252,250,245,.95);color:#1c1a19;border-radius:3px;padding:3px 7px;
+  font-size:10.5px;font-weight:700;box-shadow:0 1px 5px rgba(0,0,0,.35)}
+.pin.l em{left:auto;right:12px}
+.pin em b{display:block;font-weight:700;color:#a5532f;font-size:10px}
+#zoom .pin i{left:-8px;top:-8px;width:11px;height:11px}
+#zoom .pin em{font-size:13px;padding:4px 9px;left:16px}
+#zoom .pin.l em{left:auto;right:16px}
+#zoom .pin em b{font-size:12.5px}
 
 /* --------------------------------------------------------- administration */
 .fl2{display:flex;align-items:center;gap:8px;padding:8px 14px;border-bottom:1px solid var(--rule)}

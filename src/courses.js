@@ -54,12 +54,26 @@ export const ROUNDS = [
       "reste 176 m"
      ],
      [
-      "Bunker avant le green, gauche 393 m",
+      "Bunker avant le green, 393 m",
       "reste 25 m"
      ],
      [
-      "Bunker droit du green",
+      "Bunker du green",
       "413 m"
+     ]
+    ],
+    "pins": [
+     [
+      45,
+      6,
+      "Green",
+      "418 m"
+     ],
+     [
+      45,
+      33,
+      "Bunker 242 m",
+      "reste 176 m"
      ]
     ]
    },
@@ -72,12 +86,26 @@ export const ROUNDS = [
     "gr": "18",
     "obs": [
      [
-      "Bunker gauche 255 m",
+      "Bunker 255 m",
       "reste 36 m"
      ],
      [
-      "Bunker gauche du green",
+      "Bunker du green",
       "282 m"
+     ]
+    ],
+    "pins": [
+     [
+      54,
+      26,
+      "Green",
+      "291 m"
+     ],
+     [
+      44,
+      31,
+      "Bunker 255 m",
+      "reste 36 m"
      ]
     ]
    },
@@ -94,8 +122,22 @@ export const ROUNDS = [
       "reste 101 m"
      ],
      [
-      "Bunker gauche 367 m",
+      "Bunker 367 m",
       "reste 62 m"
+     ]
+    ],
+    "pins": [
+     [
+      37,
+      13,
+      "Green",
+      "429 m"
+     ],
+     [
+      55,
+      37,
+      "Bunkers 304–328 m",
+      "reste 101 m"
      ]
     ]
    },
@@ -112,12 +154,26 @@ export const ROUNDS = [
       "—"
      ],
      [
-      "Bunker droit 506 m",
+      "Bunker 506 m",
       "reste 58 m"
      ],
      [
-      "Bunker gauche 532 m",
+      "Bunker 532 m",
       "reste 32 m"
+     ]
+    ],
+    "pins": [
+     [
+      48,
+      31,
+      "Green",
+      "564 m"
+     ],
+     [
+      53,
+      48,
+      "Bunker 506 m",
+      "reste 58 m"
      ]
     ]
    },
@@ -134,8 +190,22 @@ export const ROUNDS = [
       "porter 133 m"
      ],
      [
-      "Bunker gauche du green",
+      "Bunker du green",
       "157 m"
+     ]
+    ],
+    "pins": [
+     [
+      48,
+      30,
+      "Green",
+      "148 m"
+     ],
+     [
+      52,
+      44,
+      "Sable",
+      "porter 133 m"
      ]
     ]
    },
@@ -148,16 +218,30 @@ export const ROUNDS = [
     "gr": "30",
     "obs": [
      [
-      "Bunker droit 241 m",
+      "Bunker 241 m",
       "reste 175 m"
      ],
      [
-      "Bunker gauche 339 m",
+      "Bunker 339 m",
       "reste 77 m"
      ],
      [
-      "Bunkers gauches du green",
+      "Bunkers du green",
       "399 et 414 m"
+     ]
+    ],
+    "pins": [
+     [
+      58,
+      14,
+      "Green",
+      "416 m"
+     ],
+     [
+      61,
+      44,
+      "Bunker 241 m",
+      "reste 175 m"
      ]
     ]
    },
@@ -177,6 +261,21 @@ export const ROUNDS = [
       "Coude : 274 m en ligne droite au green",
       "345 m par le fairway"
      ]
+    ],
+    "pins": [
+     [
+      35,
+      36,
+      "Green",
+      "345 m"
+     ],
+     [
+      55,
+      44,
+      "Au coude 247 m",
+      "reste 91 m",
+      "l"
+     ]
     ]
    },
    {
@@ -188,12 +287,28 @@ export const ROUNDS = [
     "gr": "29",
     "obs": [
      [
-      "Bunkers à droite du green",
+      "Bunkers du green",
       "166 et 181 m"
      ],
      [
       "Bunker derrière le green",
       "198 m"
+     ]
+    ],
+    "pins": [
+     [
+      46,
+      29,
+      "Green",
+      "179 m",
+      "l"
+     ],
+     [
+      58,
+      30,
+      "Bunkers",
+      "166 et 181 m",
+      "r"
      ]
     ]
    },
@@ -206,20 +321,35 @@ export const ROUNDS = [
     "gr": "29",
     "obs": [
      [
-      "Sable à gauche, 144 à 269 m",
+      "Sable, 144 à 269 m",
       "reste 226 m"
      ],
      [
-      "Bunkers à droite, 237 à 290 m",
+      "Bunkers, 237 à 290 m",
       "reste 205 m"
      ],
      [
-      "Bunker gauche 319 m",
+      "Bunker 319 m",
       "reste 176 m"
      ],
      [
-      "Bunkers droits du green",
+      "Bunkers du green",
       "419 et 436 m"
+     ]
+    ],
+    "pins": [
+     [
+      57,
+      21,
+      "Green",
+      "495 m"
+     ],
+     [
+      47,
+      60,
+      "Sable 144 à 269 m",
+      "reste 226 m",
+      "l"
      ]
     ]
    },
@@ -232,16 +362,30 @@ export const ROUNDS = [
     "gr": "26",
     "obs": [
      [
-      "Bunker gauche 252 m",
+      "Bunker 252 m",
       "reste 101 m"
      ],
      [
-      "Bunker gauche 320 m",
+      "Bunker 320 m",
       "reste 33 m"
      ],
      [
-      "Bunker droit du green",
+      "Bunker du green",
       "358 m"
+     ]
+    ],
+    "pins": [
+     [
+      53,
+      22,
+      "Green",
+      "353 m"
+     ],
+     [
+      44,
+      35,
+      "Bunker 252 m",
+      "reste 101 m"
      ]
     ]
    },
@@ -254,12 +398,26 @@ export const ROUNDS = [
     "gr": "33",
     "obs": [
      [
-      "Bunker gauche 302 m",
+      "Bunker 302 m",
       "reste 91 m"
      ],
      [
-      "Bunker gauche du green",
+      "Bunker du green",
       "373 m"
+     ]
+    ],
+    "pins": [
+     [
+      44,
+      14,
+      "Green",
+      "393 m"
+     ],
+     [
+      37,
+      26,
+      "Bunker 302 m",
+      "reste 91 m"
      ]
     ]
    },
@@ -272,16 +430,34 @@ export const ROUNDS = [
     "gr": "24",
     "obs": [
      [
-      "Bunker gauche 308 m",
+      "Eau en travers du départ",
+      "à repérer sur place"
+     ],
+     [
+      "Bunker 308 m",
       "reste 186 m"
      ],
      [
-      "Bunker droit 398 m",
+      "Bunker 398 m",
       "reste 96 m"
      ],
      [
-      "Bunker gauche du green",
+      "Bunker du green",
       "426 m"
+     ]
+    ],
+    "pins": [
+     [
+      42,
+      25,
+      "Green",
+      "494 m"
+     ],
+     [
+      47,
+      62,
+      "Eau",
+      "à porter au départ"
      ]
     ]
    },
@@ -294,8 +470,22 @@ export const ROUNDS = [
     "gr": "28",
     "obs": [
      [
-      "Bunker continu à gauche, 123 à 224 m",
+      "Bunker continu, 123 à 224 m",
       "green à 201 m"
+     ]
+    ],
+    "pins": [
+     [
+      53,
+      34,
+      "Green",
+      "201 m"
+     ],
+     [
+      43,
+      40,
+      "Bunker",
+      "123 à 224 m"
      ]
     ]
    },
@@ -308,16 +498,30 @@ export const ROUNDS = [
     "gr": "21",
     "obs": [
      [
-      "Bunker gauche 248 m",
+      "Bunker 248 m",
       "reste 208 m"
      ],
      [
-      "Bunker gauche 383 m",
+      "Bunker 383 m",
       "reste 73 m"
      ],
      [
-      "Bunkers gauches du green",
+      "Bunkers du green",
       "432 et 443 m"
+     ]
+    ],
+    "pins": [
+     [
+      43,
+      13,
+      "Green",
+      "456 m"
+     ],
+     [
+      44,
+      50,
+      "Bunker 248 m",
+      "reste 208 m"
      ]
     ]
    },
@@ -330,12 +534,28 @@ export const ROUNDS = [
     "gr": "22",
     "obs": [
      [
-      "Bunker gauche 251 m",
+      "Bunker 251 m",
       "reste 151 m"
      ],
      [
-      "Bunkers gauches du green",
+      "Bunkers du green",
       "358 et 376 m"
+     ]
+    ],
+    "pins": [
+     [
+      62,
+      16,
+      "Green",
+      "402 m",
+      "r"
+     ],
+     [
+      52,
+      21,
+      "Bunkers",
+      "358 et 376 m",
+      "l"
      ]
     ]
    },
@@ -348,16 +568,30 @@ export const ROUNDS = [
     "gr": "24",
     "obs": [
      [
-      "Eau à gauche dès 67 m",
+      "Eau courte à gauche, dès 67 m",
       "hors ligne de jeu"
      ],
      [
-      "Bunker avant-gauche 139 m",
+      "Bunker avant le green 139 m",
       "reste 33 m"
      ],
      [
-      "Bunker droit du green",
+      "Bunker du green",
       "173 m"
+     ]
+    ],
+    "pins": [
+     [
+      46,
+      34,
+      "Green",
+      "172 m"
+     ],
+     [
+      40,
+      49,
+      "Eau",
+      "courte et à gauche"
      ]
     ]
    },
@@ -370,16 +604,30 @@ export const ROUNDS = [
     "gr": "26",
     "obs": [
      [
-      "Bunker droit 194 m",
+      "Bunker 194 m",
       "reste 108 m"
      ],
      [
-      "Gros bunker gauche 241 m",
+      "Gros bunker 241 m",
       "reste 61 m"
      ],
      [
-      "Bunker gauche avant le green 275 m",
+      "Bunker avant le green 275 m",
       "reste 27 m"
+     ]
+    ],
+    "pins": [
+     [
+      50,
+      25,
+      "Green",
+      "302 m"
+     ],
+     [
+      46,
+      45,
+      "Bunker 194 m",
+      "reste 108 m"
      ]
     ]
    },
@@ -392,16 +640,35 @@ export const ROUNDS = [
     "gr": "32",
     "obs": [
      [
-      "Bunker droit 151 m",
+      "Bunker 151 m",
       "reste 229 m"
      ],
      [
-      "Bunker gauche 275 m",
+      "Eau devant le green",
+      "à repérer sur place"
+     ],
+     [
+      "Bunker 275 m",
       "reste 105 m"
      ],
      [
-      "Bunker droit du green",
+      "Bunker du green",
       "297 m"
+     ]
+    ],
+    "pins": [
+     [
+      59,
+      32,
+      "Green",
+      "380 m"
+     ],
+     [
+      52,
+      40,
+      "Eau",
+      "devant le green",
+      "l"
      ]
     ]
    }
