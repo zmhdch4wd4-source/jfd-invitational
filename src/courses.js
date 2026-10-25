@@ -108,6 +108,10 @@ export const ROUNDS = [
     "gr": "22",
     "obs": [
      [
+      "Fairway sans bunker jusqu'à 500 m",
+      "—"
+     ],
+     [
       "Bunker droit 506 m",
       "reste 58 m"
      ],
