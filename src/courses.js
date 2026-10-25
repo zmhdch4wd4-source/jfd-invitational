@@ -65,13 +65,14 @@ export const ROUNDS = [
     "pins": [
      [
       45,
-      6,
-      "Green",
-      "418 m"
+      9,
+      "Entrée 407 m",
+      "centre 418 m",
+      "r"
      ],
      [
-      45,
-      33,
+      44,
+      39,
       "Bunker 242 m",
       "reste 176 m"
      ]
@@ -97,15 +98,17 @@ export const ROUNDS = [
     "pins": [
      [
       58,
-      26,
-      "Green",
-      "291 m"
+      30,
+      "Entrée 282 m",
+      "centre 291 m",
+      "r"
      ],
      [
-      44,
-      31,
+      45,
+      33,
       "Bunker 255 m",
-      "reste 36 m"
+      "reste 36 m",
+      "l"
      ]
     ]
    },
@@ -129,13 +132,14 @@ export const ROUNDS = [
     "pins": [
      [
       40,
-      13,
-      "Green",
-      "429 m"
+      17,
+      "Entrée 416 m",
+      "centre 429 m",
+      "r"
      ],
      [
       55,
-      37,
+      39,
       "Bunkers 304–328 m",
       "reste 101 m"
      ]
@@ -165,17 +169,17 @@ export const ROUNDS = [
     "pins": [
      [
       41,
-      13,
-      "Green",
-      "564 m",
-      "r"
+      16,
+      "Entrée 554 m",
+      "centre 564 m",
+      "l"
      ],
      [
       43,
-      19,
+      20,
       "Bunker 506 m",
       "reste 58 m",
-      "l"
+      "r"
      ]
     ]
    },
@@ -199,13 +203,14 @@ export const ROUNDS = [
     "pins": [
      [
       48,
-      30,
-      "Green",
-      "148 m"
+      35,
+      "Entrée 132 m",
+      "centre 148 m",
+      "r"
      ],
      [
       52,
-      44,
+      48,
       "Sable",
       "porter 133 m"
      ]
@@ -235,13 +240,14 @@ export const ROUNDS = [
     "pins": [
      [
       58,
-      14,
-      "Green",
-      "416 m"
+      18,
+      "Entrée 400 m",
+      "centre 416 m",
+      "l"
      ],
      [
       61,
-      44,
+      47,
       "Bunker 241 m",
       "reste 175 m"
      ]
@@ -266,10 +272,11 @@ export const ROUNDS = [
     ],
     "pins": [
      [
-      35,
+      39,
       36,
-      "Green",
-      "345 m"
+      "Entrée 337 m",
+      "centre 345 m",
+      "r"
      ],
      [
       55,
@@ -300,14 +307,14 @@ export const ROUNDS = [
     "pins": [
      [
       46,
-      29,
-      "Green",
-      "179 m",
+      33,
+      "Entrée 163 m",
+      "centre 179 m",
       "l"
      ],
      [
       58,
-      30,
+      32,
       "Bunkers",
       "166 et 181 m",
       "r"
@@ -341,14 +348,15 @@ export const ROUNDS = [
     ],
     "pins": [
      [
-      57,
-      21,
-      "Green",
-      "495 m"
+      58,
+      25,
+      "Entrée 481 m",
+      "centre 495 m",
+      "l"
      ],
      [
-      47,
-      60,
+      46,
+      66,
       "Sable 144 à 269 m",
       "reste 226 m",
       "l"
@@ -378,14 +386,15 @@ export const ROUNDS = [
     ],
     "pins": [
      [
-      53,
-      22,
-      "Green",
-      "353 m"
+      51,
+      26,
+      "Entrée 340 m",
+      "centre 353 m",
+      "l"
      ],
      [
       44,
-      35,
+      39,
       "Bunker 252 m",
       "reste 101 m"
      ]
@@ -411,13 +420,14 @@ export const ROUNDS = [
     "pins": [
      [
       44,
-      14,
-      "Green",
-      "393 m"
+      18,
+      "Entrée 377 m",
+      "centre 393 m",
+      "r"
      ],
      [
       37,
-      26,
+      31,
       "Bunker 302 m",
       "reste 91 m"
      ]
@@ -450,10 +460,11 @@ export const ROUNDS = [
     ],
     "pins": [
      [
-      42,
-      25,
-      "Green",
-      "494 m"
+      41,
+      29,
+      "Entrée 481 m",
+      "centre 494 m",
+      "r"
      ],
      [
       47,
@@ -478,14 +489,15 @@ export const ROUNDS = [
     ],
     "pins": [
      [
-      53,
-      34,
-      "Green",
-      "201 m"
+      51,
+      40,
+      "Entrée 186 m",
+      "centre 201 m",
+      "r"
      ],
      [
       43,
-      40,
+      48,
       "Bunker",
       "123 à 224 m"
      ]
@@ -515,13 +527,14 @@ export const ROUNDS = [
     "pins": [
      [
       43,
-      13,
-      "Green",
-      "456 m"
+      17,
+      "Entrée 445 m",
+      "centre 456 m",
+      "r"
      ],
      [
       44,
-      50,
+      51,
       "Bunker 248 m",
       "reste 208 m"
      ]
@@ -546,15 +559,15 @@ export const ROUNDS = [
     ],
     "pins": [
      [
-      62,
-      16,
-      "Green",
-      "402 m",
+      60,
+      20,
+      "Entrée 391 m",
+      "centre 402 m",
       "r"
      ],
      [
       52,
-      21,
+      22,
       "Bunkers",
       "358 et 376 m",
       "l"
@@ -584,10 +597,11 @@ export const ROUNDS = [
     ],
     "pins": [
      [
-      46,
-      34,
-      "Green",
-      "172 m"
+      45,
+      40,
+      "Entrée 160 m",
+      "centre 172 m",
+      "r"
      ],
      [
       40,
@@ -621,13 +635,14 @@ export const ROUNDS = [
     "pins": [
      [
       50,
-      25,
-      "Green",
-      "302 m"
+      30,
+      "Entrée 289 m",
+      "centre 302 m",
+      "l"
      ],
      [
       46,
-      45,
+      47,
       "Bunker 194 m",
       "reste 108 m"
      ]
@@ -661,9 +676,10 @@ export const ROUNDS = [
     "pins": [
      [
       59,
-      32,
-      "Green",
-      "380 m"
+      38,
+      "Entrée 365 m",
+      "centre 380 m",
+      "r"
      ],
      [
       52,
