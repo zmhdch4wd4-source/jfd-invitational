@@ -1,7 +1,7 @@
 /* JFD 70's Invitational — cache hors ligne.
    Les visuels et le carnet restent consultables sans réseau ;
    les scores passent toujours par le serveur (voir la file d'attente côté client). */
-const CACHE = "jfd-v1";
+const CACHE = "jfd-v2";
 
 const CORE = ["/", "/index.html", "/app.js", "/icon.png",
   "/logo-blanc.png", "/logo-mark.png", "/logo-noir.png"];

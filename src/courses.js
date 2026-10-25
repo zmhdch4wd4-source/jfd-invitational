@@ -717,7 +717,21 @@ export const ROUNDS = [
     "gr": "38",
     "corr": "7",
     "oy": "calle 222–239 · green 304–324",
-    "desc": "Trou court et droit, bois tout le long à droite."
+    "desc": "Trou court et droit, bois tout le long à droite.",
+    "pins": [
+     [
+      59,
+      14,
+      "Entrée 316 m",
+      "centre 335 m"
+     ],
+     [
+      53,
+      38,
+      "Bunker 228 m",
+      "reste 94 m"
+     ]
+    ]
    },
    {
     "par": 4,
@@ -738,7 +752,21 @@ export const ROUNDS = [
     "gr": "38",
     "corr": "9",
     "oy": null,
-    "desc": "Terrasse taillée à flanc de colline, bois des deux côtés. Green très pénalisant à gauche."
+    "desc": "Terrasse taillée à flanc de colline, bois des deux côtés. Green très pénalisant à gauche.",
+    "pins": [
+     [
+      58,
+      11,
+      "Entrée 374 m",
+      "centre 393 m"
+     ],
+     [
+      65,
+      38,
+      "Bunker 267 m",
+      "reste 113 m"
+     ]
+    ]
    },
    {
     "par": 5,
@@ -763,7 +791,21 @@ export const ROUNDS = [
     "gr": "25",
     "corr": "53",
     "oy": null,
-    "desc": "Le bois à droite cache un fairway en réalité très large."
+    "desc": "Le bois à droite cache un fairway en réalité très large.",
+    "pins": [
+     [
+      67,
+      11,
+      "Entrée 501 m",
+      "centre 513 m"
+     ],
+     [
+      39,
+      60,
+      "Bunker 221 m",
+      "reste 285 m"
+     ]
+    ]
    },
    {
     "par": 4,
@@ -784,7 +826,21 @@ export const ROUNDS = [
     "gr": "28",
     "corr": "19",
     "oy": null,
-    "desc": "Le trou le plus difficile. Bois dense tout le long à droite, chemin à gauche."
+    "desc": "Le trou le plus difficile. Bois dense tout le long à droite, chemin à gauche.",
+    "pins": [
+     [
+      69,
+      11,
+      "Entrée 429 m",
+      "centre 443 m"
+     ],
+     [
+      46,
+      50,
+      "Bunker 226 m",
+      "reste 210 m"
+     ]
+    ]
    },
    {
     "par": 4,
@@ -805,7 +861,21 @@ export const ROUNDS = [
     "gr": "29",
     "corr": "52",
     "oy": null,
-    "desc": "Dogleg à droite, bois des deux côtés ; le green, à droite et en hauteur, ne se voit que depuis la gauche du fairway."
+    "desc": "Dogleg à droite, bois des deux côtés ; le green, à droite et en hauteur, ne se voit que depuis la gauche du fairway.",
+    "pins": [
+     [
+      70,
+      14,
+      "Entrée 357 m",
+      "centre 371 m"
+     ],
+     [
+      62,
+      33,
+      "Bois 283 m",
+      "reste 86 m"
+     ]
+    ]
    },
    {
     "par": 3,
@@ -821,7 +891,15 @@ export const ROUNDS = [
     "gr": "28",
     "corr": null,
     "oy": "green 128–148",
-    "desc": "Par 3 spectaculaire au départ surélevé, green très grand."
+    "desc": "Par 3 spectaculaire au départ surélevé, green très grand.",
+    "pins": [
+     [
+      59,
+      28,
+      "Entrée 151 m",
+      "centre 165 m"
+     ]
+    ]
    },
    {
     "par": 4,
@@ -842,7 +920,21 @@ export const ROUNDS = [
     "gr": "35",
     "corr": "12",
     "oy": "calle 214–228 · green 358–371",
-    "desc": "Long et droit, bois dense à droite. Green élevé mais très grand."
+    "desc": "Long et droit, bois dense à droite. Green élevé mais très grand.",
+    "pins": [
+     [
+      66,
+      12,
+      "Entrée 369 m",
+      "centre 387 m"
+     ],
+     [
+      49,
+      48,
+      "Bunker 219 m",
+      "reste 162 m"
+     ]
+    ]
    },
    {
     "par": 5,
@@ -867,7 +959,21 @@ export const ROUNDS = [
     "gr": "19",
     "corr": "10",
     "oy": "aucun bunker",
-    "desc": ""
+    "desc": "",
+    "pins": [
+     [
+      61,
+      9,
+      "Entrée 467 m",
+      "centre 477 m"
+     ],
+     [
+      59,
+      46,
+      "Étroit 268 m",
+      "reste 200 m"
+     ]
+    ]
    },
    {
     "par": 3,
@@ -888,7 +994,21 @@ export const ROUNDS = [
     "gr": "26",
     "corr": null,
     "oy": null,
-    "desc": "Par 3 exigeant (départs avancés depuis le guide). Hors limites tout le long à droite, green surélevé : prendre appui à gauche."
+    "desc": "Par 3 exigeant (départs avancés depuis le guide). Hors limites tout le long à droite, green surélevé : prendre appui à gauche.",
+    "pins": [
+     [
+      65,
+      26,
+      "Entrée 147 m",
+      "centre 160 m"
+     ],
+     [
+      90,
+      51,
+      "Hors limites",
+      "à droite"
+     ]
+    ]
    },
    {
     "par": 4,
@@ -909,7 +1029,21 @@ export const ROUNDS = [
     "gr": "31",
     "corr": "9",
     "oy": "aucun bunker",
-    "desc": "Couloir étroit entre les bois. Au- delà du point haut, green bien visible ; avant, coup aveugle."
+    "desc": "Couloir étroit entre les bois. Au- delà du point haut, green bien visible ; avant, coup aveugle.",
+    "pins": [
+     [
+      65,
+      14,
+      "Entrée 332 m",
+      "centre 348 m"
+     ],
+     [
+      63,
+      31,
+      "Point haut 243 m",
+      "reste 88 m"
+     ]
+    ]
    },
    {
     "par": 4,
@@ -930,7 +1064,21 @@ export const ROUNDS = [
     "gr": "39",
     "corr": "63",
     "oy": "calle 223–249",
-    "desc": "Court, fairway large, sans complication."
+    "desc": "Court, fairway large, sans complication.",
+    "pins": [
+     [
+      56,
+      13,
+      "Entrée 372 m",
+      "centre 392 m"
+     ],
+     [
+      52,
+      43,
+      "Bunker 235 m",
+      "reste 140 m"
+     ]
+    ]
    },
    {
     "par": 5,
@@ -955,7 +1103,21 @@ export const ROUNDS = [
     "gr": "30",
     "corr": "18",
     "oy": "calle 219–233 · green 463–482",
-    "desc": "Très long, bois à droite. Vallon devant le green."
+    "desc": "Très long, bois à droite. Vallon devant le green.",
+    "pins": [
+     [
+      62,
+      10,
+      "Entrée 477 m",
+      "centre 492 m"
+     ],
+     [
+      58,
+      53,
+      "Bunker 233 m",
+      "reste 249 m"
+     ]
+    ]
    },
    {
     "par": 4,
@@ -980,7 +1142,21 @@ export const ROUNDS = [
     "gr": "15",
     "corr": "11",
     "oy": "aucun bunker",
-    "desc": "Le trou le plus spectaculaire : deux barrancos à franchir, bois des deux côtés. Green peu profond (15 m)."
+    "desc": "Le trou le plus spectaculaire : deux barrancos à franchir, bois des deux côtés. Green peu profond (15 m).",
+    "pins": [
+     [
+      43,
+      16,
+      "Entrée 311 m",
+      "centre 319 m"
+     ],
+     [
+      51,
+      39,
+      "Ravin 194 m",
+      "reste 118 m"
+     ]
+    ]
    },
    {
     "par": 3,
@@ -996,7 +1172,15 @@ export const ROUNDS = [
     "gr": "30",
     "corr": null,
     "oy": "green 149–164",
-    "desc": "Long et étroit, bois très dense à droite. Green large."
+    "desc": "Long et étroit, bois très dense à droite. Green large.",
+    "pins": [
+     [
+      60,
+      28,
+      "Entrée 160 m",
+      "centre 175 m"
+     ]
+    ]
    },
    {
     "par": 4,
@@ -1021,7 +1205,21 @@ export const ROUNDS = [
     "gr": "29",
     "corr": "45",
     "oy": null,
-    "desc": "Dogleg à droite ; 2e coup avec la balle au-dessus des pieds."
+    "desc": "Dogleg à droite ; 2e coup avec la balle au-dessus des pieds.",
+    "pins": [
+     [
+      64,
+      15,
+      "Entrée 396 m",
+      "centre 410 m"
+     ],
+     [
+      58,
+      46,
+      "Dogleg 246 m",
+      "reste 150 m"
+     ]
+    ]
    },
    {
     "par": 4,
@@ -1050,7 +1248,21 @@ export const ROUNDS = [
     "gr": "30",
     "corr": "54",
     "oy": null,
-    "desc": "Ancien par 5 devenu par 4 (départs avancés). Vue sur toute la Montaña Alavesa. Bunkers de fairway des deux côtés et un bunker à l'entrée du green. Chemin à droite."
+    "desc": "Ancien par 5 devenu par 4 (départs avancés). Vue sur toute la Montaña Alavesa. Bunkers de fairway des deux côtés et un bunker à l'entrée du green. Chemin à droite.",
+    "pins": [
+     [
+      74,
+      12,
+      "Entrée 420 m",
+      "centre 435 m"
+     ],
+     [
+      61,
+      54,
+      "Bunker 162 m",
+      "reste 238 m"
+     ]
+    ]
    },
    {
     "par": 3,
@@ -1071,7 +1283,21 @@ export const ROUNDS = [
     "gr": "30",
     "corr": null,
     "oy": null,
-    "desc": "Grand lac tout le long à gauche, bois à droite. Aucun bunker."
+    "desc": "Grand lac tout le long à gauche, bois à droite. Aucun bunker.",
+    "pins": [
+     [
+      58,
+      30,
+      "Entrée 174 m",
+      "centre 189 m"
+     ],
+     [
+      30,
+      48,
+      "Lac",
+      "tout le long à gauche"
+     ]
+    ]
    },
    {
     "par": 5,
@@ -1100,7 +1326,21 @@ export const ROUNDS = [
     "gr": "27",
     "corr": "16",
     "oy": null,
-    "desc": "Dogleg à gauche, lac à gauche du fairway. Green haut défendu par un vallon avec ruisseau."
+    "desc": "Dogleg à gauche, lac à gauche du fairway. Green haut défendu par un vallon avec ruisseau.",
+    "pins": [
+     [
+      40,
+      20,
+      "Entrée 498 m",
+      "centre 512 m"
+     ],
+     [
+      77,
+      60,
+      "Talus 240 m",
+      "reste 261 m"
+     ]
+    ]
    }
   ]
  }
