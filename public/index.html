@@ -284,6 +284,15 @@ table.rank tr.lead td{background:color-mix(in srgb,var(--jaune) 12%,transparent)
 .sheet .sh .in{display:flex;align-items:center;gap:10px;width:100%;padding:11px 0}
 .sheet .sh h3{flex:1;font-family:var(--fdisp);font-weight:400;font-size:18px}
 .sheet .sh button{background:none;border:1px solid currentColor;color:inherit;padding:6px 13px;font-size:12.5px;font-weight:600}
+.sheet .sh .nav{flex:none;padding:3px 12px;font-size:19px;line-height:1.15}
+.sheet .sh .nav[disabled]{opacity:.28}
+.sheet.fromR{animation:shR .22s cubic-bezier(.2,.7,.3,1)}
+.sheet.fromL{animation:shL .22s cubic-bezier(.2,.7,.3,1)}
+@keyframes shR{from{transform:translateX(26px);opacity:.25}to{transform:none;opacity:1}}
+@keyframes shL{from{transform:translateX(-26px);opacity:.25}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet.fromR,.sheet.fromL{animation:none}}
+.sheet .swipe{text-align:center;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--soft);padding:18px 0 2px}
 .sheet .body{padding:14px var(--gutr) 0 var(--gut);max-width:760px;margin:0 auto}
 .whites{border:1px solid var(--jaune);border-left-width:4px;
   background:color-mix(in srgb,var(--jaune) 13%,transparent);padding:11px 14px;margin-bottom:12px}

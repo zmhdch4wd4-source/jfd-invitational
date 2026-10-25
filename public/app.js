@@ -495,8 +495,12 @@ function framed(t, i) {
 }
 function holeSheet(r, i) {
   const t = round(r).trous[i - 1];
+  const n = round(r).trous.length;
   let h = `<div class="sheet" id="sheet"><div class="sh"><div class="in">
-      <h3>Trou ${i} · par ${t.par}</h3><button data-act="closesheet">Fermer</button></div></div><div class="body">`;
+      <button class="nav" data-go="-1"${i === 1 ? " disabled" : ""} aria-label="Trou précédent">‹</button>
+      <h3>Trou ${i} · par ${t.par}</h3>
+      <button class="nav" data-go="1"${i === n ? " disabled" : ""} aria-label="Trou suivant">›</button>
+      <button data-act="closesheet">Fermer</button></div></div><div class="body">`;
   /* visuel + pastilles de distance posées sur les repères */
   h += `<div class="whites"><b>Distances depuis les repères blancs</b>` +
     (t.corr ? `<span>Depuis les jaunes, retrancher <b>${esc(t.corr)} m</b></span>` : "") + `</div>`;
@@ -523,6 +527,7 @@ function holeSheet(r, i) {
     h += `</div></div>`;
   }
   if (t.desc) h += `<div class="blk"><div class="bt">Le trou, selon le club</div><div class="bc"><p>${esc(t.desc)}</p></div></div>`;
+  h += `<div class="swipe">${i > 1 ? "‹ trou " + (i - 1) + " · " : ""}balayez pour changer de trou${i < n ? " · trou " + (i + 1) + " ›" : ""}</div>`;
   return h + `</div></div>`;
 }
 
@@ -865,7 +870,7 @@ function suggest(roundId) {
 /* ------------------------------------------------------------ évènements */
 document.addEventListener("click", async (e) => {
   const z = e.target.closest("[data-zoom]");
-  if (z) {
+  if (z && Date.now() - (S.swiped || 0) > 400) {
     const zr = (z.getAttribute("data-zr") || "").split("|");
     const zt = zr.length === 2 ? round(zr[0]).trous[+zr[1] - 1] : null;
     const o = el(`<div id="zoom"><span class="vw"><img src="${U(z.getAttribute("data-zoom"))}" alt="">` +
@@ -932,6 +937,7 @@ document.addEventListener("click", async (e) => {
   if (b.hasAttribute("data-hole")) { openSheet(S.carnetRound, +b.getAttribute("data-hole")); return; }
   if (b.dataset.sheet) { openSheet(markRound(), +b.dataset.sheet); return; }
   if (act === "closesheet") { closeSheet(); return; }
+  if (b.dataset.go) { gotoHole(+b.dataset.go); return; }
 
   if (act === "claim") {
     const code = $("#newCode").value.trim();
@@ -1069,14 +1075,45 @@ document.addEventListener("change", async (e) => {
 });
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") { const z = $("#zoom"); if (z) return z.remove(); closeSheet(); }
+  if (S.sheet && !$("#zoom")) {
+    if (e.key === "ArrowLeft") gotoHole(-1);
+    if (e.key === "ArrowRight") gotoHole(1);
+  }
 });
-function openSheet(r, i) {
+/** Ouvre la fiche d'un trou. `dir` anime l'arrivée quand on change de trou. */
+function openSheet(r, i, dir) {
+  const n = round(r).trous.length;
+  i = Math.min(n, Math.max(1, i));
   closeSheet();
-  document.body.appendChild(el(holeSheet(r, i)));
+  S.sheet = { r, i };
+  const o = el(holeSheet(r, i));
+  if (dir) o.classList.add(dir > 0 ? "fromR" : "fromL");
+  document.body.appendChild(o);
   document.body.style.overflow = "hidden";
+
+  /* balayage horizontal : on décide au relâchement, le défilement vertical reste libre */
+  let x0 = 0, y0 = 0, t0 = 0;
+  o.addEventListener("touchstart", (e) => {
+    const t = e.changedTouches[0]; x0 = t.clientX; y0 = t.clientY; t0 = Date.now();
+  }, { passive: true });
+  o.addEventListener("touchend", (e) => {
+    if ($("#zoom") || Date.now() - t0 > 800) return;
+    const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0;
+    if (Math.abs(dx) < 55 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+    gotoHole(dx < 0 ? 1 : -1);
+  }, { passive: true });
+}
+function gotoHole(d) {
+  if (!S.sheet) return;
+  const { r, i } = S.sheet;
+  const j = i + d;
+  if (j < 1 || j > round(r).trous.length) return;
+  S.swiped = Date.now();
+  openSheet(r, j, d);
 }
 function closeSheet() {
   const s = $("#sheet"); if (s) s.remove();
+  S.sheet = null;
   document.body.style.overflow = "";
 }
 
