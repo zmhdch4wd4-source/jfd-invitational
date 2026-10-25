@@ -30,10 +30,71 @@ async function api(path, body) {
   if (body !== undefined) {
     opt = { method: "POST", headers: { ...h, "content-type": "application/json" }, body: JSON.stringify(body) };
   }
-  const r = await fetch("/api/" + path, opt);
+  let r;
+  try { r = await fetch("/api/" + path, opt); }
+  catch { const e = new Error("Hors ligne"); e.offline = true; throw e; }
   const d = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(d.error || "Erreur réseau");
   return d;
+}
+
+/* ------------------------------------------------- file d'attente hors ligne
+   Une saisie faite sans réseau est gardée sur le téléphone et repart
+   toute seule au retour de la connexion, même après un verrouillage,
+   une fermeture de l'application ou un redémarrage. */
+const QK = "jfd.queue", CK = "jfd.state";
+let QUEUE = [];
+try { QUEUE = JSON.parse(ls.get(QK) || "[]"); } catch { QUEUE = []; }
+let offline = false;
+const saveQueue = () => ls.set(QK, JSON.stringify(QUEUE));
+const cacheState = () => { try { ls.set(CK, JSON.stringify(S.st)); } catch {} };
+
+function queueWrite(path, body) {
+  // une seule entrée par cible : la dernière valeur saisie l'emporte
+  const key = [path, body.round, body.player, body.hole == null ? "" : body.hole].join("|");
+  QUEUE = QUEUE.filter((q) => q.key !== key);
+  QUEUE.push({ key, path, body });
+  saveQueue(); cacheState(); pending();
+  flush();
+}
+/** Rejoue les saisies en attente par-dessus l'état venu du serveur. */
+function applyQueue(st) {
+  for (const q of QUEUE) {
+    const k = q.body.round + "-" + q.body.player;
+    if (q.path === "score") {
+      st.scores[k] = { ...(st.scores[k] || {}) };
+      if (q.body.strokes > 0) st.scores[k][q.body.hole] = q.body.strokes;
+      else delete st.scores[k][q.body.hole];
+    } else if (q.path === "announce") {
+      if (q.body.value > 0) st.announces[k] = q.body.value; else delete st.announces[k];
+    }
+  }
+  return st;
+}
+let flushing = false;
+async function flush() {
+  if (flushing || !QUEUE.length) return;
+  flushing = true;
+  try {
+    while (QUEUE.length) {
+      try { await api(QUEUE[0].path, QUEUE[0].body); }
+      catch (e) {
+        if (e.offline) break;      // pas de réseau : on garde la saisie pour plus tard
+        toast(e.message, true);    // refus du serveur : inutile de réessayer indéfiniment
+      }
+      QUEUE.shift(); saveQueue();
+    }
+  } finally { flushing = false; pending(); }
+}
+/** Pastille discrète : ce qui reste à envoyer, ou l'absence de réseau. */
+function pending() {
+  const n = QUEUE.length;
+  const txt = n ? (n === 1 ? "1 score en attente" : n + " scores en attente")
+                : offline ? "Hors ligne" : "";
+  let b = $("#pending");
+  if (!txt) { if (b) b.remove(); return; }
+  if (!b) { b = el(`<div id="pending"></div>`); document.body.appendChild(b); }
+  b.textContent = txt;
 }
 let toastT;
 function toast(msg, err) {
@@ -124,10 +185,18 @@ async function load(silent) {
   try {
     const st = await api("state");
     if (S.inflight > 0 && silent) return;
-    S.st = st;
+    S.st = applyQueue(st);
+    offline = false;
+    cacheState();
     render();
     maybeWelcome();
+    pending();
+    flush();
   } catch (e) {
+    if (e.offline) {
+      if (!S.st) { try { S.st = applyQueue(JSON.parse(ls.get(CK))); } catch {} }
+      if (S.st) { offline = true; render(); maybeWelcome(); pending(); return; }
+    }
     if (!silent) $("#view").innerHTML = `<div class="card"><div class="empty">Impossible de joindre le serveur.<br>${esc(e.message)}</div></div>`;
   }
 }
@@ -879,7 +948,7 @@ document.addEventListener("click", async (e) => {
     if (nv) S.st.scores[k][i] = nv; else delete S.st.scores[k][i];
     delete S.more[pid];
     render();
-    await write("score", { round: r, player: pid, hole: i, strokes: nv });
+    queueWrite("score", { round: r, player: pid, hole: i, strokes: nv });
     return;
   }
   if (b.dataset.more) { S.more[b.dataset.more] = !S.more[b.dataset.more]; render(); return; }
@@ -949,7 +1018,7 @@ document.addEventListener("change", async (e) => {
   if (t.dataset.an) {
     const r = markRound(), v = parseInt(t.value, 10);
     S.st.announces[r + "-" + t.dataset.an] = isNaN(v) ? null : v;
-    await write("announce", { round: r, player: t.dataset.an, value: isNaN(v) ? 0 : v });
+    queueWrite("announce", { round: r, player: t.dataset.an, value: isNaN(v) ? 0 : v });
     return;
   }
   if (t.dataset.cp) {
@@ -1014,12 +1083,19 @@ function closeSheet() {
     setTimeout(close, 2000);
     splash.addEventListener("click", close);
   }
+  if ("serviceWorker" in navigator && !window.demoApi && window.isSecureContext)
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  window.addEventListener("online", () => { flush(); load(true); });
+  window.addEventListener("offline", () => { offline = true; pending(); });
+  pending();
+
   load();
   setInterval(() => {
     if (document.visibilityState !== "visible") return;
     const a = document.activeElement;
     if (a && (a.tagName === "INPUT" || a.tagName === "SELECT")) return;
     if (S.inflight > 0) return;
+    flush();
     load(true);
   }, 8000);
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") load(true); });

@@ -122,6 +122,11 @@ input,select{width:100%;background:var(--card);color:var(--ink);border:1px solid
   background:var(--ink);color:var(--paper);padding:9px 16px;font-size:13px;z-index:30;
   box-shadow:0 4px 18px rgba(0,0,0,.2);max-width:calc(100% - 32px)}
 .toast.err{background:var(--rouge)}
+#pending{position:fixed;left:50%;transform:translateX(-50%);
+  bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:25;
+  background:var(--shade);color:var(--soft);border:1px solid var(--rule);
+  padding:4px 13px;font-size:11px;letter-spacing:.04em;font-weight:600;white-space:nowrap;
+  border-radius:999px;box-shadow:0 2px 10px rgba(0,0,0,.08);pointer-events:none;opacity:.94}
 .empty{padding:26px 14px;text-align:center;color:var(--soft);font-size:13.5px}
 
 /* --------------------------------------------------------- mot d'accueil */
