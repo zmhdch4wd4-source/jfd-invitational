@@ -96,7 +96,7 @@ export const ROUNDS = [
     ],
     "pins": [
      [
-      54,
+      58,
       26,
       "Green",
       "291 m"
@@ -128,7 +128,7 @@ export const ROUNDS = [
     ],
     "pins": [
      [
-      37,
+      40,
       13,
       "Green",
       "429 m"
@@ -164,16 +164,18 @@ export const ROUNDS = [
     ],
     "pins": [
      [
-      48,
-      31,
+      41,
+      13,
       "Green",
-      "564 m"
+      "564 m",
+      "r"
      ],
      [
-      53,
-      48,
+      43,
+      19,
       "Bunker 506 m",
-      "reste 58 m"
+      "reste 58 m",
+      "l"
      ]
     ]
    },
