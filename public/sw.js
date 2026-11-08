@@ -1,7 +1,7 @@
 /* JFD 70's Invitational — cache hors ligne.
    Les visuels et le carnet restent consultables sans réseau ;
    les scores passent toujours par le serveur (voir la file d'attente côté client). */
-const CACHE = "jfd-v2";
+const CACHE = "jfd-v3";
 
 const CORE = ["/", "/index.html", "/app.js", "/icon.png",
   "/logo-blanc.png", "/logo-mark.png", "/logo-noir.png"];
@@ -28,6 +28,13 @@ self.addEventListener("activate", (e) => {
   })());
 });
 
+/* Chaque page garde sa propre copie hors ligne : la page de match play (/matchplay/)
+   ne doit jamais remplacer celle du séjour en cache. */
+function shellKey(req, url) {
+  if (req.mode !== "navigate") return req;
+  return url.pathname === "/" ? "/index.html" : url.pathname;
+}
+
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
@@ -43,10 +50,10 @@ self.addEventListener("fetch", (e) => {
       try {
         const r = await fetch(req);
         const c = await caches.open(CACHE);
-        c.put(req.mode === "navigate" ? "/index.html" : req, r.clone());
+        c.put(shellKey(req, url), r.clone());
         return r;
       } catch {
-        return (await caches.match(req.mode === "navigate" ? "/index.html" : req)) ||
+        return (await caches.match(shellKey(req, url))) ||
                Response.error();
       }
     })());
