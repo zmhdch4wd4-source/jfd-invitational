@@ -203,14 +203,38 @@ function render(){const app=$("#app");
   else if(view.name==="play")app.innerHTML=playV();
   else if(view.name==="between")app.innerHTML=betweenV();
   else if(view.name==="summary")app.innerHTML=summaryV();
+  else if(view.name==="manual")app.innerHTML=manualV();
   bind()}
 
+// Résultats connus, saisis hors application (le téléphone peut ne pas les avoir)
+const KNOWN = {decima:{won:true,txt:"1 UP",date:"13/11"}};
+function matchFor(p){return S.matches.find(m=>m.preset===p.id)||S.matches.find(m=>!m.preset&&m.opp===p.opp)}
+function outcome(p){const m=matchFor(p);
+  if(m&&m.manual)return {done:true,won:m.manual.won,txt:(m.manual.won?"Gagné ":"Perdu ")+m.manual.txt,m};
+  if(m){const st=state(m);if(st.over)return {done:true,won:st.up>0,txt:finalTxt(st),m};
+    const k=KNOWN[p.id];if(k)return {done:true,won:k.won,txt:(k.won?"Gagné ":"Perdu ")+k.txt,m};return {done:false,live:st.played>0,txt:st.played?upTxt(st.up)+" après "+st.played+" trou"+(st.played>1?"s":""):"Match ouvert",m}}
+  const k=KNOWN[p.id];if(k)return {done:true,won:k.won,txt:(k.won?"Gagné ":"Perdu ")+k.txt};
+  return {done:false,live:false,txt:"À jouer"}}
 function homeV(){
-  const list=S.matches.slice().reverse().map(m=>{const st=state(m);return `<button class="preset" data-open="${m.id}"><span>${esc(m.opp)}<small>${m.type==="net"?"Net":"Brut"} · ${new Date(m.date).toLocaleDateString("fr-FR")} · ${st.over?finalTxt(st):(st.played?upTxt(st.up)+" après "+st.played:"pas commencé")}</small></span><span class="tag ${m.type}">${st.over?"Terminé":"Reprendre"}</span></button>`}).join("");
+  const poule=PRESETS.filter(p=>p.type==="brut");const pts=poule.filter(p=>{const o=outcome(p);return o.done&&o.won}).length;const joues=poule.filter(p=>outcome(p).done).length;
+  const card=p=>{const o=outcome(p);
+    const tag=o.done?`<span class="tag ${o.won?"brut":"net"}">${o.won?"Gagné":"Perdu"}</span>`:o.live?`<span class="tag net">En cours</span>`:`<span class="tag ${p.type}">${p.type==="net"?"Net":"Brut"}</span>`;
+    const main=o.m?`data-open="${o.m.id}"`:(o.done?"disabled":`data-preset="${p.id}"`);
+    return `<div class="stack" style="gap:6px"><button class="preset" ${main}><span>${esc(p.opp)}<small>${p.label}${p.strokes?` · tu reçois ${p.strokes} coups`:""}</small><small style="color:var(--ink);font-weight:600">${esc(o.txt)}</small></span>${tag}</button>
+    ${!o.done&&!o.live?`<button class="ghost" style="min-height:38px;padding:6px 10px;font-size:14px" data-manual="${p.id}">Match déjà joué ? Saisir le résultat</button>`:""}</div>`};
+  const others=S.matches.filter(m=>!PRESETS.some(p=>m.preset===p.id||m.opp===p.opp)).slice().reverse().map(m=>{const st=state(m);return `<button class="preset" data-open="${m.id}"><span>${esc(m.opp)}<small>${m.type==="net"?"Net":"Brut"} · ${m.manual?(m.manual.won?"Gagné ":"Perdu ")+esc(m.manual.txt):st.over?finalTxt(st):(st.played?upTxt(st.up)+" après "+st.played:"pas commencé")}</small></span><span class="tag ${m.type}">${m.manual||st.over?"Terminé":"Reprendre"}</span></button>`}).join("");
   return `<div class="fade stack"><div><div class="eyebrow">Championnat du club · Golf de Montravel</div><h1>Match play</h1></div>
-  <div class="card stack"><h2>Nouveau match</h2>${PRESETS.map(p=>`<button class="preset" data-preset="${p.id}"><span>${esc(p.opp)}<small>${p.label}${p.strokes?` · tu reçois ${p.strokes} coups`:""}</small></span><span class="tag ${p.type}">${p.type==="net"?"Net":"Brut"}</span></button>`).join("")}
-  <button class="ghost" data-go="setup">Autre adversaire…</button></div>
-  ${list?`<div class="card stack"><h2>Mes matchs</h2>${list}</div>`:`<div class="card muted">Tes matchs apparaîtront ici, avec le score trou par trou. Ils restent enregistrés sur ce téléphone.</div>`}</div>`}
+  <div class="card stack"><div class="row" style="justify-content:space-between"><h2>Brut · poule B</h2><span class="tag brut">${pts} pt${pts>1?"s":""} · ${joues}/3 joués</span></div>
+  ${poule.map(card).join("")}<p class="muted" style="margin:0;font-size:13.5px">Un seul match contre chaque adversaire. Les deux premiers de la poule vont en huitièmes.</p></div>
+  <div class="card stack"><h2>Net mixte</h2>${PRESETS.filter(p=>p.type==="net").map(card).join("")}</div>
+  <div class="card stack"><h2>Tours suivants</h2>${others||`<p class="muted" style="margin:0;font-size:14px">Pour un huitième de finale ou le tour suivant en net, crée le match ici.</p>`}
+  <button class="ghost" data-go="setup">Nouvel adversaire…</button></div>
+  <p class="muted" style="font-size:13px;margin:0">Les matchs restent enregistrés sur ce téléphone.</p></div>`}
+
+function manualV(){const p=PRESETS.find(x=>x.id===view.pid);return `<div class="fade stack"><div><div class="eyebrow">${esc(p.label)}</div><h1>${esc(p.opp)}</h1></div>
+  <div class="card stack"><div><label>Résultat</label><div class="toggle"><button data-res="1" class="p ${ui.won!==false?"on":""}">Gagné</button><button data-res="0" class="a ${ui.won===false?"on":""}">Perdu</button></div></div>
+  <div><label for="f-txt">Score du match</label><input id="f-txt" placeholder="1 UP, 3 & 2…" value="${esc(ui.txt||"")}"></div></div>
+  <div class="footer"><button class="ghost" data-go="home">Annuler</button><button class="primary" id="savemanual">Enregistrer</button></div></div>`}
 
 function setupV(){return `<div class="fade stack"><div><div class="eyebrow">Nouveau match</div><h1>Autre adversaire</h1></div>
   <div class="card stack"><div><label for="f-opp">Nom de l'adversaire</label><input id="f-opp" placeholder="Prénom Nom"></div>
@@ -269,7 +293,7 @@ function betweenV(){const m=cur();const st=state(m);const i=st.played-1;const r=
     <button class="primary" id="next">Aller au départ du ${st.played+1}</button></div>
   ${st.played===9&&st.up===0?`<div class="muted" style="font-size:14px">Si le règlement prévoit autre chose, termine le match ici.</div><button class="ghost" id="tosum">Terminer à égalité</button>`:""}</div>`}
 
-function summaryV(){const m=cur();const st=state(m);
+function summaryV(){const m=cur();if(m.manual)return `<div class="fade stack"><div class="card stack"><div class="eyebrow">${m.type==="net"?"Net":"Brut"}</div><h2>${esc(m.opp)}</h2><div class="res" style="font-family:var(--display);font-size:26px">${m.manual.won?"Gagné":"Perdu"} ${esc(m.manual.txt)}</div><p class="muted" style="margin:0">Résultat saisi sans le détail des trous.</p></div><div class="footer"><button class="ghost" data-go="home">Mes matchs</button></div>${ui.del?`<div class="confirm"><b>Supprimer ce match ?</b><div class="footer"><button class="ghost" id="nodel">Garder</button><button class="danger" id="yesdel">Supprimer</button></div></div>`:`<button class="ghost danger" id="del">Supprimer ce match</button>`}</div>`;const st=state(m);
   const rows=m.scores.map((sc,i)=>{const h=holeAt(i);const r=result(m,i);const s=m.type==="net"?strokesOn(h,m.strokes):0;
     return `<tr><td>${i+1}</td><td>${h.par}</td><td>${s>0?"+"+s:s<0?s:""}</td><td>${sc.me}</td><td>${sc.op}</td><td class="${r===1?"tw":r===-1?"tl":""}">${r===1?"Gagné":r===-1?"Perdu":"Partagé"}</td></tr>`}).join("");
   const won=st.seq.filter(x=>x===1).length,lost=st.seq.filter(x=>x===-1).length;
@@ -279,11 +303,14 @@ function summaryV(){const m=cur();const st=state(m);
   <div class="footer">${!st.over?`<button class="primary" data-resume="1">Reprendre</button>`:""}<button class="ghost" data-go="home">Mes matchs</button></div>
   ${ui.del?`<div class="confirm"><b>Supprimer ce match ?</b><div class="footer"><button class="ghost" id="nodel">Garder</button><button class="danger" id="yesdel">Supprimer</button></div></div>`:`<button class="ghost danger" id="del">Supprimer ce match</button>`}</div>`}
 
-function newMatch(p){const m={id:"m"+Date.now(),opp:p.opp,type:p.type,strokes:p.type==="net"?p.strokes:0,date:Date.now(),scores:[]};S.matches.push(m);save();ui={};view={name:"play",id:m.id};render();window.scrollTo(0,0)}
+function newMatch(p){const ex=p.id&&matchFor(p);if(ex){view={name:"play",id:ex.id};ui={};render();return}const m={id:"m"+Date.now(),preset:p.id||null,opp:p.opp,type:p.type,strokes:p.type==="net"?p.strokes:0,date:Date.now(),scores:[]};S.matches.push(m);save();ui={};view={name:"play",id:m.id};render();window.scrollTo(0,0)}
 function bind(){
   document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{ui={};view={name:b.dataset.go};render();window.scrollTo(0,0)});
   document.querySelectorAll("[data-preset]").forEach(b=>b.onclick=()=>newMatch(PRESETS.find(p=>p.id===b.dataset.preset)));
-  document.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{view={name:"summary",id:b.dataset.open};ui={};const m=cur();const st=state(m);if(!st.over)view.name="play";render();window.scrollTo(0,0)});
+  document.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{view={name:"summary",id:b.dataset.open};ui={};const m=cur();const st=state(m);if(!st.over&&!m.manual)view.name="play";render();window.scrollTo(0,0)});
+  document.querySelectorAll("[data-manual]").forEach(b=>b.onclick=()=>{ui={};view={name:"manual",pid:b.dataset.manual};render()});
+  document.querySelectorAll("[data-res]").forEach(b=>b.onclick=()=>{ui.txt=$("#f-txt").value;ui.won=b.dataset.res==="1";render()});
+  const sm=$("#savemanual");if(sm)sm.onclick=()=>{const p=PRESETS.find(x=>x.id===view.pid);const txt=$("#f-txt").value.trim()||"—";S.matches.push({id:"m"+Date.now(),preset:p.id,opp:p.opp,type:p.type,strokes:p.strokes,date:Date.now(),scores:[],manual:{won:ui.won!==false,txt}});save();ui={};view={name:"home"};render()};
   const c=$("#create");if(c)c.onclick=()=>{const opp=$("#f-opp").value.trim()||"Adversaire";const type=$("#f-type").value;const strokes=parseInt($("#f-str").value,10)||0;newMatch({opp,type,strokes})};
   document.querySelectorAll("[data-opp]").forEach(b=>b.onclick=()=>{ui.opp=b.dataset.opp;ui.mode=null;render()});
   document.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>{ui.mode=b.dataset.mode;render()});
