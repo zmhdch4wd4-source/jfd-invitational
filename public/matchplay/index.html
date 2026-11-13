@@ -114,6 +114,15 @@ th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute
 .path .st .rd{font-weight:700;font-size:13px;letter-spacing:.03em}
 .path .st .rd small{display:block;font-weight:400;color:var(--muted)}
 .ok{color:var(--win);font-weight:700}.ko{color:var(--lose);font-weight:700}
+.pt td,.pt th{padding:7px 4px}.pt .nmc{text-align:left;overflow-wrap:anywhere}
+.pt tr.q td:first-child{box-shadow:inset 3px 0 0 var(--win);font-weight:700}
+.pt tr.meRow td{background:var(--green-soft)}
+details summary{cursor:pointer;font-weight:600;font-size:14.5px;padding:6px 0;color:var(--green)}
+.fxl{display:flex;flex-direction:column}
+.fx{display:grid;grid-template-columns:52px minmax(0,1fr);gap:8px;padding:7px 0;border-top:1px solid var(--line);font-size:14.5px;line-height:1.3}
+.fx .jn{font-weight:700;font-size:13px}.fx .jn small{display:block;font-weight:400;color:var(--muted)}
+.fx.mine{background:var(--green-soft);border-radius:8px;padding-inline:6px}
+.toggle button.on:not(.p):not(.a){background:var(--ink);color:var(--card);border-color:var(--ink)}
 @media (max-width:380px){.holegrid{grid-template-columns:100px minmax(0,1fr)}.holenum{font-size:46px}}
 @media (prefers-reduced-motion:no-preference){.fade{animation:f .25s ease-out}@keyframes f{from{opacity:.4;transform:translateY(4px)}to{opacity:1;transform:none}}}
 </style>
@@ -283,6 +292,7 @@ function render(){const app=$("#app");
   else if(view.name==="summary")app.innerHTML=summaryV();
   else if(view.name==="manual")app.innerHTML=manualV();
   else if(view.name==="net")app.innerHTML=netV();
+  else if(view.name==="poules")app.innerHTML=poulesV();
   bind()}
 
 // Résultats connus, saisis hors application (le téléphone peut ne pas les avoir)
@@ -304,7 +314,8 @@ function homeV(){
   const others=S.matches.filter(m=>!allPresets().some(p=>m.preset===p.id||m.opp===p.opp)).slice().reverse().map(m=>{const st=state(m);return `<button class="preset" data-open="${m.id}"><span>${esc(m.opp)}<small>${m.type==="net"?"Net":"Brut"} · ${m.manual?(m.manual.won?"Gagné ":"Perdu ")+esc(m.manual.txt):st.over?finalTxt(st):(st.played?upTxt(st.up)+" après "+st.played:"pas commencé")}</small></span><span class="tag ${m.type}">${m.manual||st.over?"Terminé":"Reprendre"}</span></button>`}).join("");
   return `<div class="fade stack"><div><div class="eyebrow">Championnat du club · Golf de Montravel</div><h1>Match play</h1></div>
   <div class="card stack"><div class="row" style="justify-content:space-between"><h2>Brut · poule B</h2><span class="tag brut">${pts} pt${pts>1?"s":""} · ${joues}/3 joués</span></div>
-  ${poule.map(card).join("")}<p class="muted" style="margin:0;font-size:13.5px">Un seul match contre chaque adversaire. Les deux premiers de la poule vont en huitièmes.</p></div>
+  ${poule.map(card).join("")}<p class="muted" style="margin:0;font-size:13.5px">Un seul match contre chaque adversaire. Les deux premiers de la poule vont en huitièmes.</p>
+  <button class="primary" data-go="poules">Voir toutes les poules</button></div>
   <div class="card stack"><h2>Net mixte</h2>${PRESETS.filter(p=>p.type==="net").concat(netPresets()).map(card).join("")}${nextNet()}
   <button class="primary" data-go="net">Voir le tableau</button></div>
   <div class="card stack"><h2>Tours suivants</h2>${others||`<p class="muted" style="margin:0;font-size:14px">Pour un huitième de finale ou le tour suivant en net, crée le match ici.</p>`}
@@ -312,6 +323,41 @@ function homeV(){
   <p class="muted" style="font-size:13px;margin:0">Les matchs restent enregistrés sur ce téléphone.</p></div>`}
 
 
+
+// ===== Championnats brut : poules (tirage du 07/11/2026) =====
+const POULES={"H":[{"id":"A","p":["NORLUND Samuel","MASO Philippe","BARBE Thierry","GRAVIER Jeremie","BALDUCCHI Dominique"],"fx":[[1,"MASO Philippe","BALDUCCHI Dominique","30/11"],[1,"BARBE Thierry","GRAVIER Jeremie","30/11"],[2,"NORLUND Samuel","BALDUCCHI Dominique","31/12"],[2,"MASO Philippe","BARBE Thierry","31/12"],[3,"NORLUND Samuel","GRAVIER Jeremie","31/01"],[3,"BALDUCCHI Dominique","BARBE Thierry","31/01"],[4,"NORLUND Samuel","BARBE Thierry","28/02"],[4,"GRAVIER Jeremie","MASO Philippe","28/02"],[5,"NORLUND Samuel","MASO Philippe","31/03"],[5,"GRAVIER Jeremie","BALDUCCHI Dominique","31/03"]]},{"id":"B","p":["DEFFARGE Jean-François","DEFFARGE Quentin","DECIMA Jean-Louis","FARO Michael"],"fx":[[1,"DEFFARGE Jean-François","FARO Michael","30/11"],[1,"DEFFARGE Quentin","DECIMA Jean-Louis","30/11"],[2,"DEFFARGE Jean-François","DECIMA Jean-Louis","31/12"],[2,"FARO Michael","DEFFARGE Quentin","31/12"],[3,"DEFFARGE Jean-François","DEFFARGE Quentin","31/01"],[3,"DECIMA Jean-Louis","FARO Michael","31/01"]]},{"id":"C","p":["LEBLOND Stephane","GALERI Christophe","RADOVIC Joseph","ELIEZER Cedric"],"fx":[[1,"LEBLOND Stephane","ELIEZER Cedric","30/11"],[1,"GALERI Christophe","RADOVIC Joseph","30/11"],[2,"LEBLOND Stephane","RADOVIC Joseph","31/12"],[2,"ELIEZER Cedric","GALERI Christophe","31/12"],[3,"LEBLOND Stephane","GALERI Christophe","31/01"],[3,"RADOVIC Joseph","ELIEZER Cedric","31/01"]]},{"id":"D","p":["BASPEYRAS Laurent","VINNAC Christian","GERBEAU Jean-Marc","BOUDAIN Jean Luc","CHASSAGNE Philippe"],"fx":[[1,"VINNAC Christian","CHASSAGNE Philippe","30/11"],[1,"GERBEAU Jean-Marc","BOUDAIN Jean Luc","30/11"],[2,"BASPEYRAS Laurent","CHASSAGNE Philippe","31/12"],[2,"VINNAC Christian","GERBEAU Jean-Marc","31/12"],[3,"BASPEYRAS Laurent","BOUDAIN Jean Luc","31/01"],[3,"CHASSAGNE Philippe","GERBEAU Jean-Marc","31/01"],[4,"BASPEYRAS Laurent","GERBEAU Jean-Marc","28/02"],[4,"BOUDAIN Jean Luc","VINNAC Christian","28/02"],[5,"BASPEYRAS Laurent","VINNAC Christian","31/03"],[5,"BOUDAIN Jean Luc","CHASSAGNE Philippe","31/03"]]},{"id":"E","p":["PEYTUREAU Jean-Pascal","NATOLI Derek","ESTEVE Jean Pierre","FERON Vincent","DEFFARGE Benjamin"],"fx":[[1,"NATOLI Derek","DEFFARGE Benjamin","30/11"],[1,"ESTEVE Jean Pierre","FERON Vincent","30/11"],[2,"PEYTUREAU Jean-Pascal","DEFFARGE Benjamin","31/12"],[2,"NATOLI Derek","ESTEVE Jean Pierre","31/12"],[3,"PEYTUREAU Jean-Pascal","FERON Vincent","31/01"],[3,"DEFFARGE Benjamin","ESTEVE Jean Pierre","31/01"],[4,"PEYTUREAU Jean-Pascal","ESTEVE Jean Pierre","28/02"],[4,"FERON Vincent","NATOLI Derek","28/02"],[5,"PEYTUREAU Jean-Pascal","NATOLI Derek","31/03"],[5,"FERON Vincent","DEFFARGE Benjamin","31/03"]]},{"id":"F","p":["BARDE Cyril","DOWNIE Stephen","LACOMBE Janick","MARQUANT Swan"],"fx":[[1,"BARDE Cyril","MARQUANT Swan","30/11"],[1,"DOWNIE Stephen","LACOMBE Janick","30/11"],[2,"BARDE Cyril","LACOMBE Janick","31/12"],[2,"MARQUANT Swan","DOWNIE Stephen","31/12"],[3,"BARDE Cyril","DOWNIE Stephen","31/01"],[3,"LACOMBE Janick","MARQUANT Swan","31/01"]]},{"id":"G","p":["RERAU Christophe","HOLLMAN Emanuel","PETYT Stephane","GUIRIMAND Jean-Luc"],"fx":[[1,"RERAU Christophe","GUIRIMAND Jean-Luc","30/11"],[1,"HOLLMAN Emanuel","PETYT Stephane","30/11"],[2,"RERAU Christophe","PETYT Stephane","31/12"],[2,"GUIRIMAND Jean-Luc","HOLLMAN Emanuel","31/12"],[3,"RERAU Christophe","HOLLMAN Emanuel","31/01"],[3,"PETYT Stephane","GUIRIMAND Jean-Luc","31/01"]]},{"id":"H","p":["SILLIEN Laurent","NISENBAUM Didier","TROTTIER Dominique","MASSE Cyril","MASSE Arnaud"],"fx":[[1,"NISENBAUM Didier","MASSE Arnaud","30/11"],[1,"TROTTIER Dominique","MASSE Cyril","30/11"],[2,"SILLIEN Laurent","MASSE Arnaud","31/12"],[2,"NISENBAUM Didier","TROTTIER Dominique","31/12"],[3,"SILLIEN Laurent","MASSE Cyril","31/01"],[3,"MASSE Arnaud","TROTTIER Dominique","31/01"],[4,"SILLIEN Laurent","TROTTIER Dominique","28/02"],[4,"MASSE Cyril","NISENBAUM Didier","28/02"],[5,"SILLIEN Laurent","NISENBAUM Didier","31/03"],[5,"MASSE Cyril","MASSE Arnaud","31/03"]]}],"F":[{"id":"A","p":["PINEAU Martine","LOGAN-GERBEAU Diane","RUDGE Penny","BEDUBOURG Francine"],"fx":[[1,"PINEAU Martine","BEDUBOURG Francine","30/11"],[1,"LOGAN-GERBEAU Diane","RUDGE Penny","30/11"],[2,"PINEAU Martine","RUDGE Penny","31/12"],[2,"BEDUBOURG Francine","LOGAN-GERBEAU Diane","31/12"],[3,"PINEAU Martine","LOGAN-GERBEAU Diane","31/01"],[3,"RUDGE Penny","BEDUBOURG Francine","31/01"]]},{"id":"B","p":["LAFARGUE Régine","SCHWARTZ Aurore","DARIGNAC Sarah","DEFFARGE Sylvie","DRUART Marie Laurence"],"fx":[[1,"SCHWARTZ Aurore","DRUART Marie Laurence","30/11"],[1,"DARIGNAC Sarah","DEFFARGE Sylvie","30/11"],[2,"LAFARGUE Régine","DRUART Marie Laurence","31/12"],[2,"SCHWARTZ Aurore","DARIGNAC Sarah","31/12"],[3,"LAFARGUE Régine","DEFFARGE Sylvie","31/01"],[3,"DRUART Marie Laurence","DARIGNAC Sarah","31/01"],[4,"LAFARGUE Régine","DARIGNAC Sarah","28/02"],[4,"DEFFARGE Sylvie","SCHWARTZ Aurore","28/02"],[5,"LAFARGUE Régine","SCHWARTZ Aurore","31/03"],[5,"DEFFARGE Sylvie","DRUART Marie Laurence","31/03"]]},{"id":"C","p":["GAMBIRASIO Karine","DENOST Helene","BARBIER Francoise","COSSE Michelle","BRIEN Lucie"],"fx":[[1,"DENOST Helene","BRIEN Lucie","30/11"],[1,"BARBIER Francoise","COSSE Michelle","30/11"],[2,"GAMBIRASIO Karine","BRIEN Lucie","31/12"],[2,"DENOST Helene","BARBIER Francoise","31/12"],[3,"GAMBIRASIO Karine","COSSE Michelle","31/01"],[3,"BRIEN Lucie","BARBIER Francoise","31/01"],[4,"GAMBIRASIO Karine","BARBIER Francoise","28/02"],[4,"COSSE Michelle","DENOST Helene","28/02"],[5,"GAMBIRASIO Karine","DENOST Helene","31/03"],[5,"COSSE Michelle","BRIEN Lucie","31/03"]]},{"id":"D","p":["BAGUR PEYTUREAU Marie-Cécile","LACOMBE Karine","RIVIERE Stéphanie","BAILLELY Catherine"],"fx":[[1,"LACOMBE Karine","RIVIERE Stéphanie","30/11"],[1,"BAGUR PEYTUREAU Marie-Cécile","BAILLELY Catherine","30/11"],[2,"BAILLELY Catherine","LACOMBE Karine","31/12"],[2,"BAGUR PEYTUREAU Marie-Cécile","RIVIERE Stéphanie","31/12"],[3,"RIVIERE Stéphanie","BAILLELY Catherine","31/01"],[3,"BAGUR PEYTUREAU Marie-Cécile","LACOMBE Karine","31/01"]]}]};
+const POULE_MAJ="Tirage du 07/11/2026 · aucun résultat publié";
+// Résultats publiés, par poule : [vainqueur, perdant, score]. Ex. "H-B":[["DEFFARGE Quentin","DECIMA Jean-Louis","1 UP"]]
+const POULE_RES={};
+const PRESET_NAMES={decima:"DECIMA Jean-Louis",faro:"FARO Michael",jf:"DEFFARGE Jean-François"};
+function pouleResults(g,pl){const key=g+"-"+pl.id,res=(POULE_RES[key]||[]).map(r=>({w:r[0],l:r[1],s:r[2],src:"off"}));
+  if(key==="H-B")PRESETS.filter(p=>p.type==="brut").forEach(p=>{const o=outcome(p),opp=PRESET_NAMES[p.id];
+    if(!o.done||res.some(r=>[r.w,r.l].includes(ME)&&[r.w,r.l].includes(opp)))return;
+    res.push({w:o.won?ME:opp,l:o.won?opp:ME,s:o.txt.replace(/^(Gagné|Perdu) /,""),src:"app"})});
+  return res}
+function standings(g,pl){const res=pouleResults(g,pl);const nb=pl.fx.filter(f=>f[1]===pl.p[0]||f[2]===pl.p[0]).length;
+  const rows=pl.p.map((n,i)=>{const w=res.filter(r=>r.w===n).length,l=res.filter(r=>r.l===n).length;return {n,seed:i,j:w+l,w,l,left:nb-w-l,pts:w}});
+  const h2h=(a,b)=>{const r=res.find(r=>(r.w===a.n&&r.l===b.n)||(r.w===b.n&&r.l===a.n));return r?(r.w===a.n?-1:1):0};
+  rows.sort((a,b)=>b.pts-a.pts||(rows.filter(x=>x.pts===a.pts).length===2?h2h(a,b):0)||a.l-b.l||a.seed-b.seed);
+  return {rows,res,nb}}
+function poulesV(){const g=ui.g||"H";const pools=POULES[g].slice();
+  if(g==="H")pools.sort((a,b)=>(b.p.includes(ME)?1:0)-(a.p.includes(ME)?1:0));
+  const qual=g==="H"?"Les deux premiers de chaque poule vont en huitièmes de finale (18 trous).":"Les deux premières de chaque poule vont en quarts de finale.";
+  const card=pl=>{const {rows,res,nb}=standings(g,pl);const mine=pl.p.includes(ME);const any=rows.some(r=>r.j>0);
+    const tr=rows.map((r,i)=>`<tr class="${r.n===ME?"meRow":""} ${i<2?"q":""}"><td>${any?i+1:"–"}</td><td class="nmc">${esc(nm(r.n))}${r.seed===0?` <span class="muted" style="font-size:12px">TS</span>`:""}</td><td>${r.j}</td><td>${r.w}</td><td>${r.l}</td><td>${r.left}</td><td><b>${r.pts}</b></td></tr>`).join("");
+    const fx=pl.fx.map(f=>{const r=res.find(r=>(r.w===f[1]&&r.l===f[2])||(r.w===f[2]&&r.l===f[1]));
+      const t=r?`<b>${esc(nm(r.w))}</b> bat ${esc(nm(r.l))}${r.s?" · "+esc(r.s):""}${r.src==="app"?` <span class="muted">(ta saisie)</span>`:""}`:`${esc(nm(f[1]))} – ${esc(nm(f[2]))}`;
+      return `<div class="fx ${f[1]===ME||f[2]===ME?"mine":""}"><span class="jn">J${f[0]}<small>${f[3]}</small></span><span>${t}</span></div>`}).join("");
+    const done=res.length,tot=pl.fx.length;
+    return `<div class="card stack" style="gap:8px"><div class="row" style="justify-content:space-between"><h2>Poule ${pl.id}${mine?` <span class="tag brut" style="vertical-align:middle">ta poule</span>`:""}</h2><span class="muted" style="font-size:13px">${pl.p.length} ${g==="H"?"joueurs":"joueuses"} · ${done}/${tot} joués · ${nb} matchs chacun</span></div>
+    <div class="scroll"><table class="pt"><tr><th></th><th style="text-align:left">${g==="H"?"Joueur":"Joueuse"}</th><th>J</th><th>G</th><th>P</th><th title="À jouer">Rest.</th><th>Pts</th></tr>${tr}</table></div>
+    <details ${mine?"open":""}><summary>Calendrier et résultats</summary><div class="fxl">${fx}</div></details></div>`};
+  return `<div class="fade stack"><div><div class="eyebrow">Championnat du club · brut · 9 trous</div><h1>Les poules</h1>
+    <div class="muted" style="font-size:13.5px;margin-top:4px">${esc(POULE_MAJ)}</div></div>
+  <div class="toggle" role="tablist"><button role="tab" aria-selected="${g==="H"}" data-g="H" class="${g==="H"?"on":""}">Hommes</button><button role="tab" aria-selected="${g==="F"}" data-g="F" class="${g==="F"?"on":""}">Femmes</button></div>
+  <p class="muted" style="margin:0;font-size:13.5px">${qual} 1 point par victoire. Égalité à deux : confrontation directe. Les deux premières lignes de chaque tableau sont les places qualificatives.</p>
+  ${pools.map(card).join("")}
+  <div class="footer"><button class="ghost" data-go="home">Mes matchs</button></div></div>`}
 function netV(){const R=bracket(),path=myPath(R);
   const curK=path.length?path.filter(s=>!s.ifwin).slice(-1)[0].k:0;const k=ui.rd??curK;
   const pathH=path.map(s=>{const [rn,dl]=NET_ROUNDS[s.k];let t;
@@ -429,6 +475,7 @@ function bind(){
   const u=$("#undo");if(u)u.onclick=()=>{const m=cur();const st=state(m);const r=m.scores[st.played-1];m.scores.length=st.played-1;save();ui={me:r.me,op:r.op===99?holeAt(st.played-1).par+1:r.op};render()};
   const n=$("#next");if(n)n.onclick=()=>{ui={};view.name="play";render();window.scrollTo(0,0)};
   document.querySelectorAll("#tosum").forEach(b=>b.onclick=()=>{view.name="summary";ui={};render();window.scrollTo(0,0)});
+  document.querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>{ui.g=b.dataset.g;render();window.scrollTo(0,0)});
   document.querySelectorAll("[data-rd]").forEach(b=>b.onclick=()=>{ui.rd=+b.dataset.rd;render()});
   const rs=$("[data-resume]");if(rs)rs.onclick=()=>{view.name="play";ui={};render()};
   const dl=$("#del");if(dl)dl.onclick=()=>{ui.del=1;render()};
