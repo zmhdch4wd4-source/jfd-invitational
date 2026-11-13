@@ -109,28 +109,28 @@ const HOLES = [
  {n:1,par:3,dist:"124 m",slope:"descente",hcp:9,tee:[500,1625],P:[[432,775]],A:[[430,715]],
   p:["PW · avant-centre du green, laisser rouler"],a:["PW plein · droit sur le drapeau"],
   when:"Si l'adversaire a raté le green.",note:"Arbres derrière le green : long, c'est un trou perdu."},
- {n:2,par:3,dist:"112 m",slope:"montée",hcp:3,tee:[507,1585],P:[[470,745]],A:[[488,700]],
+ {n:2,par:3,dist:"112 m",slope:"montée",hcp:4,tee:[507,1585],P:[[470,745]],A:[[488,700]],
   p:["Fer 9 · swing tranquille, moitié gauche du green"],a:["Fer 9 · sur le drapeau (centre si drapeau à droite)"],
   when:"Si l'adversaire est en difficulté.",note:"Arbres à droite, puis une mare juste derrière : un raté à droite est presque toujours perdu. Jamais de wedge en montée."},
- {n:3,par:3,dist:"118 m",slope:"légère montée",hcp:8,tee:[535,1560],P:[[515,655]],A:[[522,612]],
+ {n:3,par:3,dist:"118 m",slope:"légère montée",hcp:7,tee:[535,1560],P:[[515,655]],A:[[522,612]],
   p:["Fer 9 · porter jusqu'au milieu du green"],a:["PW plein · sur le drapeau"],
   when:"Si l'adversaire a raté le green.",note:"Cailloux devant à droite : ne jamais faire rouler. Bois derrière."},
- {n:4,par:4,dist:"230 m",slope:"forte descente",hcp:5,tee:[340,1655],P:[[330,410],[340,215]],A:[[338,280],[340,215]],
+ {n:4,par:4,dist:"230 m",slope:"forte descente",hcp:6,tee:[340,1655],P:[[330,410],[340,215]],A:[[338,280],[340,215]],
   p:["Fer 7 · à gauche du bunker de fairway","Chip roulé au fer 9 (~25 m)"],a:["Hybride 4 · ~200 m avec la pente, entrée du green","Chip ou putt pour le birdie"],
   when:"Si tu es mené ou si l'adversaire a raté son départ.",note:"Arbres à droite tout le long : un raté à droite coûte le trou."},
- {n:5,par:4,dist:"250 m",slope:"plat",hcp:2,tee:[497,1530],P:[[405,770],[497,240]],A:[[482,470],[497,240]],
+ {n:5,par:4,dist:"250 m",slope:"plat",hcp:1,tee:[497,1530],P:[[405,770],[497,240]],A:[[482,470],[497,240]],
   p:["Fer 9 · ~110 m, rester devant le ruisseau","48° plein · ~90 m, centre du green"],a:["Driver · ~200 m de vol par-dessus le ruisseau","LW / SW · ~50 m, sur le drapeau"],
-  when:"Seulement sol sec ou vent dans le dos, et si tu es mené.",note:"Ruisseau en travers à 180 m : ton fer 7 y roule. Un des trous les plus durs."},
- {n:6,par:4,dist:"280 m",slope:"green surélevé",hcp:6,tee:[450,1600],P:[[447,790],[393,242]],A:[[440,640],[393,242]],
+  when:"Seulement sol sec ou vent dans le dos, et si tu es mené.",note:"Ruisseau en travers à 180 m : ton fer 7 y roule. Trou le plus dur."},
+ {n:6,par:4,dist:"280 m",slope:"green surélevé",hcp:3,tee:[450,1600],P:[[447,790],[393,242]],A:[[440,640],[393,242]],
   p:["Bois 5 sur tee · ~165 m, centre-gauche","SW / 48° · ~95 m (joue +10 m), centre"],a:["Driver · ~200 m, centre-gauche","LW / SW · ~70 m, sur le drapeau"],
   when:"Si l'adversaire est dans le rough ou les arbres.",note:"Eau derrière le green à gauche : jamais long. Green surélevé : un club de plus."},
- {n:7,par:5,dist:"420 m",slope:"montée finale",hcp:4,tee:[660,1560],P:[[185,1165],[352,822],[655,428]],A:[[185,1165],[330,690],[655,428]],
+ {n:7,par:5,dist:"420 m",slope:"montée finale",hcp:2,tee:[660,1560],P:[[185,1165],[352,822],[655,428]],A:[[185,1165],[330,690],[655,428]],
   p:["Fer 7 · fairway de gauche, avant le ruisseau","Hybride 4 · fairway qui monte au green","48° / SW · ~90 m, centre du green"],a:["Fer 7 · fairway de gauche","Hybride 4 plein · le plus loin possible","SW / LW · ~60 m, sur le drapeau"],
   when:"Si tu as besoin du trou.",note:"Pas de driver : il irait au ruisseau. Dernier coup en montée : un club de plus."},
- {n:8,par:3,dist:"125 m",slope:"descente",hcp:7,tee:[703,1300],P:[[462,440]],A:[[458,385]],
+ {n:8,par:3,dist:"125 m",slope:"descente",hcp:8,tee:[703,1300],P:[[462,440]],A:[[458,385]],
   p:["48° · avant du green"],a:["PW · sur le drapeau"],
   when:"Si l'adversaire a raté le green.",note:"Étang derrière le green : court, c'est bien ; long, c'est mouillé."},
- {n:9,par:3,dist:"162 m",slope:"montée",hcp:1,tee:[360,1650],P:[[415,805],[360,290]],A:[[360,290]],
+ {n:9,par:3,dist:"162 m",slope:"montée",hcp:5,tee:[360,1650],P:[[415,805],[360,290]],A:[[360,290]],
   p:["48° · ~100 m, zone tondue à gauche de l'eau","LW plein · ~60 m en montée, centre"],a:["Hybride 4 · droit sur le green (80 m de vol pour passer l'eau)"],
   when:"Si l'adversaire est sur le green en 1, ou si tu dois gagner le trou.",note:"Bunker devant le green. Un 4 propre gagne souvent ce trou."},
 ];
@@ -240,7 +240,7 @@ function setupV(){return `<div class="fade stack"><div><div class="eyebrow">Nouv
   <div class="card stack"><div><label for="f-opp">Nom de l'adversaire</label><input id="f-opp" placeholder="Prénom Nom"></div>
   <div><label for="f-type">Formule</label><select id="f-type"><option value="brut">Brut</option><option value="net">Net</option></select></div>
   <div><label for="f-str">Coups reçus par toi (net) · négatif si tu en rends</label><input id="f-str" type="number" inputmode="numeric" value="0"></div>
-  <p class="muted" style="margin:0;font-size:14px">Les coups se placent sur les trous de handicap 1, 2, 3… de la carte du match play : 9, 5, 2, 7, 4, 6, 8, 3, 1.</p></div>
+  <p class="muted" style="margin:0;font-size:14px">Les coups se placent sur les trous de handicap 1, 2, 3… de la carte officielle : 5, 7, 6, 2, 9, 4, 3, 8, 1.</p></div>
   <div class="footer"><button class="ghost" data-go="home">Annuler</button><button class="primary" id="create">Commencer</button></div></div>`}
 
 function cur(){return S.matches.find(m=>m.id===view.id)}
