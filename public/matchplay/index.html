@@ -96,6 +96,24 @@ th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute
 .footer{display:flex;gap:8px}
 .footer button{flex:1}
 .confirm{background:var(--attack-soft);border:1px solid var(--attack);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.tabs button{flex-shrink:0;padding:8px 12px;min-height:40px;font-size:14px}
+.tabs button.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.bk{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--card)}
+.bk .pl{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 10px;font-size:15px}
+.bk .pl+.pl{border-top:1px solid var(--line)}
+.bk .pl .nm{min-width:0;overflow-wrap:anywhere}
+.bk .pl.w .nm{font-weight:700}.bk .pl.l .nm{color:var(--muted);text-decoration:line-through}
+.bk .pl.tbd .nm{color:var(--muted);font-style:italic;font-size:14px}
+.bk .pl.me{background:var(--green-soft)}
+.bk .ft{font-size:12.5px;color:var(--muted);padding:5px 10px;border-top:1px dashed var(--line);display:flex;justify-content:space-between;gap:8px}
+.cp{font-size:12px;font-weight:700;border-radius:999px;padding:1px 8px;background:var(--attack-soft);color:var(--attack);flex-shrink:0}
+.path{display:flex;flex-direction:column;gap:0}
+.path .st{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;padding:9px 0;border-top:1px solid var(--line);font-size:14.5px;line-height:1.35}
+.path .st:first-child{border-top:0}
+.path .st .rd{font-weight:700;font-size:13px;letter-spacing:.03em}
+.path .st .rd small{display:block;font-weight:400;color:var(--muted)}
+.ok{color:var(--win);font-weight:700}.ko{color:var(--lose);font-weight:700}
 @media (max-width:380px){.holegrid{grid-template-columns:100px minmax(0,1fr)}.holenum{font-size:46px}}
 @media (prefers-reduced-motion:no-preference){.fade{animation:f .25s ease-out}@keyframes f{from{opacity:.4;transform:translateY(4px)}to{opacity:1;transform:none}}}
 </style>
@@ -140,6 +158,66 @@ const PRESETS = [
   {id:"faro",opp:"Michael Faro",type:"brut",strokes:0,label:"Brut · poule B · avant le 31/12"},
   {id:"jf",opp:"Jean-François Deffarge",type:"brut",strokes:0,label:"Brut · poule B · avant le 31/01"},
 ];
+
+// ===== Championnat net mixte : tableau (mis à jour à partir des résultats publiés le lundi) =====
+const NET_MAJ="Tirage du 07/11/2026 · aucun résultat publié";
+const NET_ROUNDS=[["1er tour","30/11/2026"],["Seizièmes","31/12/2026"],["Huitièmes","31/01/2027"],["Quarts","28/02/2027"],["Demi-finales","31/03/2027"],["Finale","30/04/2027"]];
+const ME="DEFFARGE Quentin";
+// 1er tour, dans l'ordre du tableau. r = joueur qui reçoit les coups (a = haut, b = bas), n = nombre de coups.
+const NET_R1=[
+ {a:"BARDE Cyril"},{a:"BOUDAIN Jean Luc",b:"MASSE Cyril",n:0},
+ {a:"MARQUANT Swan",b:"DARIGNAC Sarah",r:"a",n:2},{a:"RERAU Christophe"},
+ {a:"ESTEVE Jean Pierre"},{a:"BARBE Thierry",b:"BAILLELY Catherine",r:"b",n:3},
+ {a:"FARO Michael"},{a:"MASSE Arnaud",b:"GALERI Christophe",n:0},
+ {a:"LEBLOND Stephane",b:"RUDGE Penny",r:"b",n:7},{a:"ELIEZER Cedric",b:"DEFFARGE Jean-François",r:"a",n:2},
+ {a:"PINEAU Martine"},{a:"SCHWARTZ Aurore",b:"LAFARGUE Régine",r:"a",n:8},
+ {a:"GRAVIER Jeremie"},{a:"RIVIERE Stéphanie",b:"GUIRIMAND Jean-Luc",n:0},
+ {a:"HOLLMAN Emanuel"},{a:"LACOMBE Janick",b:"NATOLI Derek",r:"a",n:3},
+ {a:"BARBIER Francoise"},{a:"LOGAN-GERBEAU Diane",b:"VINNAC Christian",r:"a",n:5},
+ {a:"GAMBIRASIO Karine",b:"NISENBAUM Didier",r:"b",n:2},{a:"DEFFARGE Sylvie"},
+ {a:"BRIEN Lucie"},{a:"BALDUCCHI Dominique",b:"DECIMA Jean-Louis",r:"a",n:3},
+ {a:"BASPEYRAS Laurent"},{a:"SILLIEN Laurent",b:"DEFFARGE Quentin",r:"b",n:4},
+ {a:"TROTTIER Dominique"},{a:"FERON Vincent",b:"MCMAHON Stephen",r:"b",n:1},
+ {a:"GERBEAU Jean-Marc",b:"DEFFARGE Benjamin",r:"a",n:5},{a:"DRUART Marie Laurence"},
+ {a:"LACOMBE Karine"},{a:"DENOST Helene",b:"BAGUR PEYTUREAU Marie-Cécile",r:"a",n:5},
+ {a:"COSSE Michelle",b:"RADOVIC Joseph",r:"a",n:3},{a:"BEDUBOURG Francine"},
+];
+// Résultats publiés : "tour-match" → {w:"a"|"b", s:"score"}. Ex. "1-24":{w:"b",s:"2 & 1"}
+const NET_RES={};
+// Coups des tours suivants, quand le club les publie : "tour-match" → {r:"a"|"b", n}
+const NET_STR={};
+
+function nm(s){if(!s)return "";const w=s.split(" "),last=[],first=[];
+  w.forEach(x=>(x===x.toUpperCase()&&/\p{Lu}/u.test(x)?last:first).push(x));
+  const tc=x=>x.toLowerCase().replace(/(^|[-\s])(\p{L})/gu,(m,a,b)=>a+b.toUpperCase()).replace(/^Mc(\p{L})/u,(m,b)=>"Mc"+b.toUpperCase());
+  return (first.join(" ")+" "+tc(last.join(" "))).trim()}
+function netPreset(m,k){if(m.key==="1-24")return PRESETS.find(p=>p.id==="sillien");
+  const side=m.a===ME?"a":"b",opp=side==="a"?m.b:m.a;
+  const strokes=m.n==null?null:(m.n===0?0:(m.r===side?m.n:-m.n));
+  return {id:"net-"+m.key,opp:nm(opp),type:"net",strokes,label:`Net mixte · ${NET_ROUNDS[k][0].toLowerCase()} · avant le ${NET_ROUNDS[k][1].slice(0,5)}`}}
+function bracket(){const R=[];
+  const resolve=(m,k)=>{const w=x=>x.w?x[x.w]:null;
+    if(k===0&&!m.b){m.ex=true;m.w="a";return}
+    const o=NET_RES[m.key];if(o){m.w=o.w;m.s=o.s;m.src="off";return}
+    if(m.a&&m.b&&(m.a===ME||m.b===ME)){const out=outcome(netPreset(m,k));
+      if(out.done){m.w=(out.won===(m.a===ME))?"a":"b";m.s=out.txt.replace(/^(Gagné|Perdu) /,"");m.src="app"}}};
+  R[0]=NET_R1.map((m,j)=>({...m,key:"1-"+(j+1)}));R[0].forEach(m=>resolve(m,0));
+  for(let k=1;k<6;k++){R[k]=[];for(let j=0;j<R[k-1].length/2;j++){const key=(k+1)+"-"+(j+1),st=NET_STR[key]||{},x=R[k-1][2*j],y=R[k-1][2*j+1];
+    const m={a:x.w?x[x.w]:null,b:y.w?y[y.w]:null,r:st.r,n:st.n,key,from:[x,y]};resolve(m,k);R[k].push(m)}}
+  return R}
+function cands(m){if(m.w)return [m[m.w]];if(!m.from)return [m.a,m.b].filter(Boolean);return cands(m.from[0]).concat(cands(m.from[1]))}
+function candTxt(m){const c=cands(m);return c.length===1?nm(c[0]):c.length<=3?c.map(nm).join(" ou "):`un joueur parmi ${c.length}`}
+// Parcours de Quentin dans le tableau
+function myPath(R){let j=R[0].findIndex(m=>m.a===ME||m.b===ME),side=R[0][j].a===ME?"a":"b",out=[],ahead=0;
+  for(let k=0;k<6;k++){const m=R[k][j],other=side==="a"?"b":"a";
+    const oppTxt=m[other]?nm(m[other]):(m.from?candTxt(m.from[other==="a"?0:1]):"");
+    if(m[side]===ME){out.push({k,m,side,opp:m[other]||null,oppTxt,won:m.w?m.w===side:null});if(m.w&&m.w!==side)break}
+    else if(m[side])break;
+    else{out.push({k,m,side,opp:null,oppTxt,won:null,ifwin:true});if(++ahead>=2)break}
+    side=j%2===0?"a":"b";j=Math.floor(j/2)}
+  return out}
+function netPresets(){const R=bracket();return myPath(R).filter(s=>!s.ifwin&&s.opp&&s.m.key!=="1-24").map(s=>netPreset(s.m,s.k))}
+function allPresets(){return PRESETS.concat(netPresets())}
 const KEY="mp-montravel-v1";
 function load(){try{return JSON.parse(localStorage.getItem(KEY))||{matches:[]}}catch(e){return {matches:[]}}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -204,6 +282,7 @@ function render(){const app=$("#app");
   else if(view.name==="between")app.innerHTML=betweenV();
   else if(view.name==="summary")app.innerHTML=summaryV();
   else if(view.name==="manual")app.innerHTML=manualV();
+  else if(view.name==="net")app.innerHTML=netV();
   bind()}
 
 // Résultats connus, saisis hors application (le téléphone peut ne pas les avoir)
@@ -220,25 +299,54 @@ function homeV(){
   const card=p=>{const o=outcome(p);
     const tag=o.done?`<span class="tag ${o.won?"brut":"net"}">${o.won?"Gagné":"Perdu"}</span>`:o.live?`<span class="tag net">En cours</span>`:`<span class="tag ${p.type}">${p.type==="net"?"Net":"Brut"}</span>`;
     const main=o.m?`data-open="${o.m.id}"`:(o.done?"disabled":`data-preset="${p.id}"`);
-    return `<div class="stack" style="gap:6px"><button class="preset" ${main}><span>${esc(p.opp)}<small>${p.label}${p.strokes?` · tu reçois ${p.strokes} coups`:""}</small><small style="color:var(--ink);font-weight:600">${esc(o.txt)}</small></span>${tag}</button>
+    return `<div class="stack" style="gap:6px"><button class="preset" ${main}><span>${esc(p.opp)}<small>${p.label}${p.strokes>0?` · tu reçois ${p.strokes} coup${p.strokes>1?"s":""}`:p.strokes<0?` · tu rends ${-p.strokes} coup${p.strokes<-1?"s":""}`:p.strokes===null?" · coups reçus à confirmer":""}</small><small style="color:var(--ink);font-weight:600">${esc(o.txt)}</small></span>${tag}</button>
     ${!o.done&&!o.live?`<button class="ghost" style="min-height:38px;padding:6px 10px;font-size:14px" data-manual="${p.id}">Match déjà joué ? Saisir le résultat</button>`:""}</div>`};
-  const others=S.matches.filter(m=>!PRESETS.some(p=>m.preset===p.id||m.opp===p.opp)).slice().reverse().map(m=>{const st=state(m);return `<button class="preset" data-open="${m.id}"><span>${esc(m.opp)}<small>${m.type==="net"?"Net":"Brut"} · ${m.manual?(m.manual.won?"Gagné ":"Perdu ")+esc(m.manual.txt):st.over?finalTxt(st):(st.played?upTxt(st.up)+" après "+st.played:"pas commencé")}</small></span><span class="tag ${m.type}">${m.manual||st.over?"Terminé":"Reprendre"}</span></button>`}).join("");
+  const others=S.matches.filter(m=>!allPresets().some(p=>m.preset===p.id||m.opp===p.opp)).slice().reverse().map(m=>{const st=state(m);return `<button class="preset" data-open="${m.id}"><span>${esc(m.opp)}<small>${m.type==="net"?"Net":"Brut"} · ${m.manual?(m.manual.won?"Gagné ":"Perdu ")+esc(m.manual.txt):st.over?finalTxt(st):(st.played?upTxt(st.up)+" après "+st.played:"pas commencé")}</small></span><span class="tag ${m.type}">${m.manual||st.over?"Terminé":"Reprendre"}</span></button>`}).join("");
   return `<div class="fade stack"><div><div class="eyebrow">Championnat du club · Golf de Montravel</div><h1>Match play</h1></div>
   <div class="card stack"><div class="row" style="justify-content:space-between"><h2>Brut · poule B</h2><span class="tag brut">${pts} pt${pts>1?"s":""} · ${joues}/3 joués</span></div>
   ${poule.map(card).join("")}<p class="muted" style="margin:0;font-size:13.5px">Un seul match contre chaque adversaire. Les deux premiers de la poule vont en huitièmes.</p></div>
-  <div class="card stack"><h2>Net mixte</h2>${PRESETS.filter(p=>p.type==="net").map(card).join("")}</div>
+  <div class="card stack"><h2>Net mixte</h2>${PRESETS.filter(p=>p.type==="net").concat(netPresets()).map(card).join("")}${nextNet()}
+  <button class="primary" data-go="net">Voir le tableau</button></div>
   <div class="card stack"><h2>Tours suivants</h2>${others||`<p class="muted" style="margin:0;font-size:14px">Pour un huitième de finale ou le tour suivant en net, crée le match ici.</p>`}
   <button class="ghost" data-go="setup">Nouvel adversaire…</button></div>
   <p class="muted" style="font-size:13px;margin:0">Les matchs restent enregistrés sur ce téléphone.</p></div>`}
 
-function manualV(){const p=PRESETS.find(x=>x.id===view.pid);return `<div class="fade stack"><div><div class="eyebrow">${esc(p.label)}</div><h1>${esc(p.opp)}</h1></div>
+
+function netV(){const R=bracket(),path=myPath(R);
+  const curK=path.length?path.filter(s=>!s.ifwin).slice(-1)[0].k:0;const k=ui.rd??curK;
+  const pathH=path.map(s=>{const [rn,dl]=NET_ROUNDS[s.k];let t;
+    if(s.won===true)t=`<span class="ok">Gagné ${esc(s.m.s||"")}</span> contre ${esc(s.oppTxt)}${s.m.src==="app"?` <span class="muted">(ta saisie)</span>`:""}`;
+    else if(s.won===false)t=`<span class="ko">Perdu ${esc(s.m.s||"")}</span> contre ${esc(s.oppTxt)}`;
+    else if(s.ifwin)t=`Si tu gagnes : ${esc(s.oppTxt)}`;
+    else if(s.opp){const p=netPreset(s.m,s.k);t=`<b>Contre ${esc(s.oppTxt)}</b> · ${p.strokes==null?"coups reçus à confirmer":p.strokes>0?`tu reçois ${p.strokes} coup${p.strokes>1?"s":""}`:p.strokes<0?`tu rends ${-p.strokes} coup${p.strokes<-1?"s":""}`:"sans coup rendu"}`}
+    else t=`Contre ${esc(s.oppTxt)}`;
+    return `<div class="st"><div class="rd">${rn}<small>avant le ${dl.slice(0,5)}</small></div><div>${t}</div></div>`}).join("");
+  const line=(m,side)=>{const n=m[side],cls=[n===ME?"me":"",m.w?(m.w===side?"w":"l"):"",n?"":"tbd"].join(" ");
+    const lbl=n?esc(nm(n)):(m.from?"Vainqueur : "+esc(candTxt(m.from[side==="a"?0:1])):"");
+    const cp=m.r===side&&m.n?`<span class="cp">+${m.n}</span>`:"";
+    return `<div class="pl ${cls}"><span class="nm">${lbl}</span>${cp}${m.w===side&&m.s?`<b style="font-size:13px">${esc(m.s)}</b>`:""}</div>`};
+  const card=m=>{if(m.ex)return `<div class="bk"><div class="pl ${m.a===ME?"me":""}"><span class="nm">${esc(nm(m.a))}</span><span class="muted" style="font-size:13px">exempt</span></div></div>`;
+    const ft=m.src==="app"?"Résultat saisi dans l'appli, en attente de publication":(!m.w&&m.a&&m.b&&m.n===0?"Sans coup rendu":"");
+    return `<div class="bk">${line(m,"a")}${line(m,"b")}${ft?`<div class="ft"><span>${ft}</span></div>`:""}</div>`};
+  const list=R[k];
+  const done=R[k].filter(m=>m.w&&!m.ex).length,tot=R[k].filter(m=>!m.ex).length;
+  return `<div class="fade stack"><div><div class="eyebrow">Championnat du club · Golf de Montravel</div><h1>Net mixte</h1>
+    <div class="muted" style="font-size:13.5px;margin-top:4px">Match play sur 9 trous à tous les tours · ${esc(NET_MAJ)}</div></div>
+  <div class="card stack"><h2>Ton parcours</h2><div class="path">${pathH}</div></div>
+  <div class="tabs" role="tablist">${NET_ROUNDS.map((r,i)=>`<button role="tab" aria-selected="${i===k}" class="${i===k?"on":""}" data-rd="${i}">${r[0]}</button>`).join("")}</div>
+  <div class="row" style="justify-content:space-between"><h2>${NET_ROUNDS[k][0]}</h2><span class="muted" style="font-size:13.5px">avant le ${NET_ROUNDS[k][1]} · ${done}/${tot} joués</span></div>
+  <div class="stack" style="gap:8px">${list.map(card).join("")}</div>
+  <p class="muted" style="margin:0;font-size:13px">+N : coups reçus par ce joueur. Le tableau est mis à jour avec les résultats publiés par le club le lundi.</p>
+  <div class="footer"><button class="ghost" data-go="home">Mes matchs</button></div></div>`}
+function nextNet(){const s=myPath(bracket()).find(x=>x.ifwin);return s?`<p class="muted" style="margin:0;font-size:14px">${NET_ROUNDS[s.k][0]} si tu gagnes : ${esc(s.oppTxt)}.</p>`:""}
+function manualV(){const p=allPresets().find(x=>x.id===view.pid);return `<div class="fade stack"><div><div class="eyebrow">${esc(p.label)}</div><h1>${esc(p.opp)}</h1></div>
   <div class="card stack"><div><label>Résultat</label><div class="toggle"><button data-res="1" class="p ${ui.won!==false?"on":""}">Gagné</button><button data-res="0" class="a ${ui.won===false?"on":""}">Perdu</button></div></div>
   <div><label for="f-txt">Score du match</label><input id="f-txt" placeholder="1 UP, 3 & 2…" value="${esc(ui.txt||"")}"></div></div>
   <div class="footer"><button class="ghost" data-go="home">Annuler</button><button class="primary" id="savemanual">Enregistrer</button></div></div>`}
 
 function setupV(){return `<div class="fade stack"><div><div class="eyebrow">Nouveau match</div><h1>Autre adversaire</h1></div>
-  <div class="card stack"><div><label for="f-opp">Nom de l'adversaire</label><input id="f-opp" placeholder="Prénom Nom"></div>
-  <div><label for="f-type">Formule</label><select id="f-type"><option value="brut">Brut</option><option value="net">Net</option></select></div>
+  <div class="card stack"><div><label for="f-opp">Nom de l'adversaire</label><input id="f-opp" placeholder="Prénom Nom" value="${esc(ui.pre?.opp||"")}"></div>
+  <div><label for="f-type">Formule</label><select id="f-type"><option value="brut">Brut</option><option value="net" ${ui.pre?"selected":""}>Net</option></select></div>
   <div><label for="f-str">Coups reçus par toi (net) · négatif si tu en rends</label><input id="f-str" type="number" inputmode="numeric" value="0"></div>
   <p class="muted" style="margin:0;font-size:14px">Les coups se placent sur les trous de handicap 1, 2, 3… de la carte officielle : 5, 7, 6, 2, 9, 4, 3, 8, 1.</p></div>
   <div class="footer"><button class="ghost" data-go="home">Annuler</button><button class="primary" id="create">Commencer</button></div></div>`}
@@ -303,15 +411,16 @@ function summaryV(){const m=cur();if(m.manual)return `<div class="fade stack"><d
   <div class="footer">${!st.over?`<button class="primary" data-resume="1">Reprendre</button>`:""}<button class="ghost" data-go="home">Mes matchs</button></div>
   ${ui.del?`<div class="confirm"><b>Supprimer ce match ?</b><div class="footer"><button class="ghost" id="nodel">Garder</button><button class="danger" id="yesdel">Supprimer</button></div></div>`:`<button class="ghost danger" id="del">Supprimer ce match</button>`}</div>`}
 
-function newMatch(p){const ex=p.id&&matchFor(p);if(ex){view={name:"play",id:ex.id};ui={};render();return}const m={id:"m"+Date.now(),preset:p.id||null,opp:p.opp,type:p.type,strokes:p.type==="net"?p.strokes:0,date:Date.now(),scores:[]};S.matches.push(m);save();ui={};view={name:"play",id:m.id};render();window.scrollTo(0,0)}
+function newMatch(p){const ex=p.id&&matchFor(p);if(ex){view={name:"play",id:ex.id};ui={};render();return}
+  if(p.strokes==null&&p.type==="net"){ui={pre:p};view={name:"setup"};render();window.scrollTo(0,0);return}const m={id:"m"+Date.now(),preset:p.id||null,opp:p.opp,type:p.type,strokes:p.type==="net"?p.strokes:0,date:Date.now(),scores:[]};S.matches.push(m);save();ui={};view={name:"play",id:m.id};render();window.scrollTo(0,0)}
 function bind(){
   document.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{ui={};view={name:b.dataset.go};render();window.scrollTo(0,0)});
-  document.querySelectorAll("[data-preset]").forEach(b=>b.onclick=()=>newMatch(PRESETS.find(p=>p.id===b.dataset.preset)));
+  document.querySelectorAll("[data-preset]").forEach(b=>b.onclick=()=>newMatch(allPresets().find(p=>p.id===b.dataset.preset)));
   document.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{view={name:"summary",id:b.dataset.open};ui={};const m=cur();const st=state(m);if(!st.over&&!m.manual)view.name="play";render();window.scrollTo(0,0)});
   document.querySelectorAll("[data-manual]").forEach(b=>b.onclick=()=>{ui={};view={name:"manual",pid:b.dataset.manual};render()});
   document.querySelectorAll("[data-res]").forEach(b=>b.onclick=()=>{ui.txt=$("#f-txt").value;ui.won=b.dataset.res==="1";render()});
-  const sm=$("#savemanual");if(sm)sm.onclick=()=>{const p=PRESETS.find(x=>x.id===view.pid);const txt=$("#f-txt").value.trim()||"—";S.matches.push({id:"m"+Date.now(),preset:p.id,opp:p.opp,type:p.type,strokes:p.strokes,date:Date.now(),scores:[],manual:{won:ui.won!==false,txt}});save();ui={};view={name:"home"};render()};
-  const c=$("#create");if(c)c.onclick=()=>{const opp=$("#f-opp").value.trim()||"Adversaire";const type=$("#f-type").value;const strokes=parseInt($("#f-str").value,10)||0;newMatch({opp,type,strokes})};
+  const sm=$("#savemanual");if(sm)sm.onclick=()=>{const p=allPresets().find(x=>x.id===view.pid);const txt=$("#f-txt").value.trim()||"—";S.matches.push({id:"m"+Date.now(),preset:p.id,opp:p.opp,type:p.type,strokes:p.strokes,date:Date.now(),scores:[],manual:{won:ui.won!==false,txt}});save();ui={};view={name:"home"};render()};
+  const c=$("#create");if(c)c.onclick=()=>{const opp=$("#f-opp").value.trim()||"Adversaire";const type=$("#f-type").value;const strokes=parseInt($("#f-str").value,10)||0;newMatch({id:ui.pre?.id,opp,type,strokes})};
   document.querySelectorAll("[data-opp]").forEach(b=>b.onclick=()=>{ui.opp=b.dataset.opp;ui.mode=null;render()});
   document.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>{ui.mode=b.dataset.mode;render()});
   document.querySelectorAll("[data-step]").forEach(b=>b.onclick=()=>{const [k,dv]=b.dataset.step.split(",");ui[k]=Math.max(1,Math.min(15,ui[k]+parseInt(dv,10)));$("#v-"+k).textContent=ui[k];render()});
@@ -320,6 +429,7 @@ function bind(){
   const u=$("#undo");if(u)u.onclick=()=>{const m=cur();const st=state(m);const r=m.scores[st.played-1];m.scores.length=st.played-1;save();ui={me:r.me,op:r.op===99?holeAt(st.played-1).par+1:r.op};render()};
   const n=$("#next");if(n)n.onclick=()=>{ui={};view.name="play";render();window.scrollTo(0,0)};
   document.querySelectorAll("#tosum").forEach(b=>b.onclick=()=>{view.name="summary";ui={};render();window.scrollTo(0,0)});
+  document.querySelectorAll("[data-rd]").forEach(b=>b.onclick=()=>{ui.rd=+b.dataset.rd;render()});
   const rs=$("[data-resume]");if(rs)rs.onclick=()=>{view.name="play";ui={};render()};
   const dl=$("#del");if(dl)dl.onclick=()=>{ui.del=1;render()};
   const nd=$("#nodel");if(nd)nd.onclick=()=>{ui.del=0;render()};
