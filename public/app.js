@@ -231,7 +231,9 @@ function render() {
   const lbl = st.role === "admin" ? "Administrateur" : st.role === "marker" ? "Marqueur" : "";
   badge.textContent = lbl; badge.hidden = !lbl;
 
-  const tabs = [["board", "Classement", `<path d="M4 19V9M10 19V4M16 19v-7"/>`], ["carnet", "Carnet", `<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3Z"/><path d="M5 17h14"/>`]];
+  const tabs = [["board", "Classement", `<path d="M4 19V9M10 19V4M16 19v-7"/>`],
+    ["carnet", "Carnet", `<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3Z"/><path d="M5 17h14"/>`],
+    ["sejour", "Séjour", `<rect x="3.5" y="5.5" width="17" height="15"/><path d="M8 3v4M16 3v4M3.5 10.5h17"/>`]];
   if (myFlights().length) tabs.push(["mark", "Ma partie", `<path d="M5 3v18"/><path d="M5 4h12l-2 4 2 4H5"/>`]);
   if (st.captainOf) tabs.push(["cap", "Composition", `<path d="M9 7a2.5 2.5 0 1 1 5 0 2.5 2.5 0 0 1-5 0Z"/><path d="M4 20a5 5 0 0 1 5-5h5a5 5 0 0 1 5 5"/><path d="M17 4h4m-2-2v4"/>`]);
   if (st.role === "admin") tabs.push(["admin", "Réglages", `<circle cx="12" cy="12" r="3"/><path d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6l1.4 1.4m10 10 1.4 1.4m0-12.8-1.4 1.4m-10 10L5.6 18.4"/>`]);
@@ -244,6 +246,7 @@ function render() {
   const v = $("#view");
   v.innerHTML = S.tab === "board" ? boardHtml()
     : S.tab === "carnet" ? carnetTabHtml()
+    : S.tab === "sejour" ? sejourHtml()
     : S.tab === "mark" ? markHtml()
     : S.tab === "cap" ? capHtml()
     : adminHtml();
@@ -539,6 +542,95 @@ function holeSheet(r, i) {
   if (t.desc) h += `<div class="blk"><div class="bt">Le trou, selon le club</div><div class="bc"><p>${esc(t.desc)}</p></div></div>`;
   h += `<div class="swipe">${i > 1 ? "‹ trou " + (i - 1) + " · " : ""}balayez pour changer de trou${i < n ? " · trou " + (i + 1) + " ›" : ""}</div>`;
   return h + `</div></div>`;
+}
+
+/* ---------------------------------------------------------------- séjour */
+/* Programme du séjour. Chaque évènement s'écrit [moment, titre, détail, tbd] :
+   un moment vide fait une étape de route, et tbd pose l'étiquette
+   « à confirmer » — il suffira de retirer le 1 quand l'information sera sûre. */
+const SEJOUR = [
+  { d: "Mardi 16 mars", t: "La route", ev: [
+    ["8 h 00", "Départ de Vélines", "Le convoi part groupé ; le retour s'organisera séparément."],
+    ["", "Environ 4 h 30 de route jusqu'en Navarre", ""],
+    ["Midi", "Club de Golf Zuasti — neuf trous", "Le neuf aller, par 36, 2 994 m des blancs. Green fee réglé sur place.", 1],
+    ["", "Environ 1 h 15 de route jusqu'à Logroño", ""],
+    ["Après-midi", "Arrivée à l'hôtel Sercotel Portales", "Calle Portales 85, en plein centre. Six chambres twin, trois nuits, petit-déjeuner inclus."],
+    ["Soir", "Dîner en ville", "Chacun règle sa part sur place."],
+  ] },
+  { d: "Mercredi 17 mars", t: "El Campo de Logroño", ev: [
+    ["Matin", "El Campo de Logroño — 18 trous", "Parque de La Grajera, à dix minutes de l'hôtel. Six voiturettes pour douze joueurs.", 1],
+    ["Midi", "Déjeuner au club", "Menu du jour, environ 30 € par personne, réglé sur place."],
+    ["Soir", "Libre", "Rien de prévu : Logroño se visite à pied depuis l'hôtel."],
+  ] },
+  { d: "Jeudi 18 mars", t: "Izki Golf", ev: [
+    ["", "Environ 1 h de route jusqu'à Urturi, en Álava", ""],
+    ["Matin", "Izki Golf — 18 trous", "Green fee et voiturette compris dans la part collectée ; réglés au comptoir le jour même.", 1],
+    ["Soir", "Dernière soirée", "Classement final et remise des prix."],
+  ] },
+  { d: "Vendredi 19 mars", t: "Retour", ev: [
+    ["Matin", "Petit-déjeuner et chambres libérées", "", 1],
+    ["Ensuite", "Route du retour", "Les voitures se composent selon les contraintes de chacun : certains s'arrêteront en chemin, d'autres rentreront d'une traite."],
+  ] },
+];
+
+/* [nom, adresse, téléphone appelable, requête pour la carte, tbd] */
+const ADRESSES = [
+  ["Hôtel Sercotel Portales", "Calle Portales 85, 26001 Logroño", "+34941502794",
+    "Hotel Sercotel Portales, Calle Portales 85, Logroño"],
+  ["El Campo de Logroño", "Parque de La Grajera, ctra de Burgos km 2, 26007 Logroño", "+34941511360",
+    "Campo de Golf de Logroño, La Grajera"],
+  ["Izki Golf", "01119 Urturi, Álava", "+34945378262", "Izki Golf, Urturi, Alava"],
+  ["Club de Golf Zuasti", "Zuasti, Navarre — poste 1 pour le golf", "+34948302900",
+    "Club de Golf Zuasti, Navarra", 1],
+  ["Urgences, partout en Espagne", "Police, pompiers, secours", "112"],
+];
+
+function sejourHtml() {
+  const c = untilDepart();
+  let h = `<div class="card"><div class="ph1">
+      <span class="ey">Mardi 16 — vendredi 19 mars 2027</span>
+      <h2>Logroño, La Rioja</h2>
+      <p>Douze joueurs · trois nuits · trois parcours</p></div>
+    <div class="pad sm muted" style="padding-top:10px">` +
+    (c ? `Départ dans <b style="color:var(--ink)">${c.d} jour${c.d > 1 ? "s" : ""}</b>. ` : "") +
+    `Les étapes marquées « à confirmer » attendent encore une réponse ou une heure précise.</div></div>`;
+
+  SEJOUR.forEach((j) => {
+    h += `<div class="card"><h2>${esc(j.d)} <span class="sub">${esc(j.t)}</span></h2><div class="tl">`;
+    j.ev.forEach(([hr, ti, de, tbd]) => {
+      h += `<div class="ev${hr ? "" : " leg"}"><span class="hr">${esc(hr || "")}</span><div class="ct">
+        <b>${esc(ti)}${tbd ? ` <span class="tag">à confirmer</span>` : ""}</b>` +
+        (de ? `<span>${esc(de)}</span>` : "") + `</div></div>`;
+    });
+    h += `</div></div>`;
+  });
+
+  h += `<div class="card"><h2>Carnet d'adresses <span class="sub">à garder sous la main</span></h2>` +
+    ADRESSES.map(([nom, adr, tel, map, tbd]) => `<div class="ad">
+      <div class="ai"><b>${esc(nom)}${tbd ? ` <span class="tag">à confirmer</span>` : ""}</b>
+        <span>${esc(adr)}</span></div>
+      <div class="aa"><a href="tel:${esc(tel)}">Appeler</a>` +
+      (map ? `<a href="https://www.google.com/maps/search/?api=1&amp;query=${encodeURIComponent(map)}"
+         target="_blank" rel="noopener">Y aller</a>` : "") + `</div></div>`).join("") + `</div>`;
+
+  h += `<div class="card"><h2>L'argent <span class="sub">collecté d'avance</span></h2><div class="pad">
+      <div class="ob"><span>Hôtel, trois nuits en twin</span><span class="r">157,50 €</span></div>
+      <div class="ob"><span>El Campo de Logroño, green fee et voiturette</span><span class="r">71,50 €</span></div>
+      <div class="ob"><span>Izki Golf, green fee et voiturette</span><span class="r">58,50 €</span></div>
+      <div class="ob"><span><b>Part par joueur</b></span><span class="r"><b>287,50 €</b></span></div>
+    </div>
+    <div class="note">Un minimum de 150 € quand vous voulez avant le 30 janvier, le solde avant le
+      15 février. Restent à votre charge, sur place : le parcours du premier jour, le déjeuner du
+      mercredi au club, les dîners, le carburant et les péages.</div></div>`;
+
+  h += `<div class="card"><h2>Bon à savoir</h2><div class="rules"><ul>
+      <li>Carte d'identité ou passeport en cours de validité, et votre carte de licence : certains clubs la demandent au départ.</li>
+      <li>Même heure qu'en France, et la même monnaie.</li>
+      <li>Mi-mars en Rioja, comptez souvent entre 5 et 15 °C, avec de la pluie possible. Izki est plus haut que Logroño : prévoyez une couche de plus.</li>
+      <li>Le carnet des trois parcours reste consultable sans réseau, visuels compris, dès lors que vous avez ouvert l'application une fois en Wi-Fi.</li>
+      <li>Les scores saisis hors réseau partent tout seuls dès que le téléphone retrouve du signal.</li>
+    </ul></div></div>`;
+  return h;
 }
 
 /* ------------------------------------------------------- saisie marqueur */
