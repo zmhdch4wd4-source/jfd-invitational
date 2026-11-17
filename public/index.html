@@ -158,6 +158,38 @@ input,select{width:100%;background:var(--card);color:var(--ink);border:1px solid
   text-align:center;font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;opacity:.4}
 @media (prefers-reduced-motion:reduce){#welcome,#welcome.out{animation:none}}
 .unsaved{color:var(--rouge);font-weight:700}
+
+/* ------------------------------------------------- règlements (organisateur) */
+.payset{display:flex;gap:8px}
+.payset input{flex:1;min-width:0}
+.payset .btn{width:auto;flex:none;padding-left:16px;padding-right:16px}
+.paybar{height:6px;background:var(--rule);border-radius:3px;overflow:hidden;margin-bottom:7px}
+.paybar i{display:block;height:100%;background:var(--jaune);transition:width .3s}
+.paysum{font-size:12.5px;color:var(--soft)}
+.paysum b{color:var(--ink);font-size:14px}
+.paylist{border-top:1px solid var(--rule);margin-top:10px}
+.payrow{border-bottom:1px solid var(--rule)}
+.payrow .pr0{display:flex;align-items:center;gap:9px;width:100%;background:none;border:0;
+  padding:11px 14px;text-align:left;color:inherit;font:inherit;cursor:pointer}
+.payrow .dot{flex:none;width:8px;height:8px;border-radius:50%;background:var(--rule)}
+.payrow.part .dot{background:var(--jaune)}
+.payrow.ok .dot{background:var(--birdie)}
+.payrow .nm{flex:1;font-size:14.5px;font-weight:600}
+.payrow .amt{font-size:14px;font-variant-numeric:tabular-nums}
+.payrow .rest{flex:none;width:92px;text-align:right;font-size:11.5px;color:var(--soft);
+  font-variant-numeric:tabular-nums}
+.payrow.ok .rest{color:var(--birdie);font-weight:700}
+.payrow.open{background:var(--shade)}
+.pdet{padding:0 14px 12px}
+.pln{display:flex;align-items:center;gap:10px;font-size:13px;padding:5px 0;
+  border-top:1px dotted var(--rule);font-variant-numeric:tabular-nums}
+.pln span{flex:1;color:var(--soft)}
+.pln.muted{color:var(--soft);font-style:italic}
+.pln .x{flex:none;background:none;border:0;color:var(--rouge);font-size:14px;
+  padding:2px 6px;cursor:pointer}
+.padd{display:flex;gap:6px;margin-top:9px}
+.padd input{min-width:0;flex:1}
+.padd .btn{width:auto;flex:none;padding-left:14px;padding-right:14px}
 .props{border-bottom:1px solid var(--rule);background:var(--shade)}
 .props .pt{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--soft);font-weight:600;padding:9px 14px 2px}
 .props .pr{display:flex;gap:10px;padding:7px 14px}

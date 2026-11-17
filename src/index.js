@@ -83,7 +83,7 @@ function mayWrite(role, round, player) {
 
 /* -------------------------------------------------------------- lecture */
 async function readState(db, role) {
-  const [players, teamMode, r1pars, flights, adminHash, proposals, locked, sc, an] = await Promise.all([
+  const [players, teamMode, r1pars, flights, adminHash, proposals, locked, payments, sc, an] = await Promise.all([
     getSetting(db, "players", PLAYERS),
     getSetting(db, "teamMode", "best4"),
     getSetting(db, "r1pars", null),
@@ -91,6 +91,7 @@ async function readState(db, role) {
     getSetting(db, "adminHash", null),
     getSetting(db, "proposals", {}),
     getSetting(db, "locked", {}),
+    getSetting(db, "payments", { due: 0, rows: {} }),
     db.prepare(`SELECT round, player, hole, strokes FROM scores`).all(),
     db.prepare(`SELECT round, player, value FROM announces`).all(),
   ]);
@@ -123,6 +124,8 @@ async function readState(db, role) {
     proposals, locked,
     myFlights: role && role !== "admin" && role.kind === "marker"
       ? role.grants.map((g) => ({ round: g.round, id: g.flight.id })) : [],
+    // Les règlements ne regardent que l'organisateur : ils ne sortent pas autrement.
+    ...(role === "admin" ? { payments } : {}),
     players, teamMode, rounds, flights: safeFlights, scores, announces,
   };
 }
@@ -237,6 +240,36 @@ export default {
             await setSetting(db, "locked", lk);
           }
           return json({ ok: true, flights: all[body.round], locked: complete });
+        }
+        /* --- règlements : lecture et écriture réservées à l'organisateur --- */
+        case "/api/payments": {
+          if (role !== "admin") return bad("Réservé à l'administrateur.", 403);
+          const players = await getSetting(db, "players", PLAYERS);
+          const ids = new Set(players.map((p) => p.id));
+          const cur = await getSetting(db, "payments", { due: 0, rows: {} });
+          const next = { due: cur.due || 0, rows: { ...(cur.rows || {}) } };
+          if (body.due !== undefined) {
+            const d = Number(body.due);
+            if (!isFinite(d) || d < 0) return bad("Montant dû invalide.");
+            next.due = Math.round(d * 100) / 100;
+          }
+          if (body.player !== undefined) {
+            if (!ids.has(body.player)) return bad("Joueur inconnu.");
+            const list = (next.rows[body.player] || []).slice();
+            if (body.add) {
+              const a = Number(body.add.a);
+              if (!isFinite(a) || a <= 0) return bad("Montant invalide.");
+              list.push({ d: String(body.add.d || "").slice(0, 10), a: Math.round(a * 100) / 100 });
+              list.sort((x, y) => String(x.d).localeCompare(String(y.d)));
+            } else if (body.remove !== undefined) {
+              const i = Number(body.remove);
+              if (i >= 0 && i < list.length) list.splice(i, 1);
+            }
+            if (list.length) next.rows[body.player] = list;
+            else delete next.rows[body.player];
+          }
+          await setSetting(db, "payments", next);
+          return json({ ok: true, payments: next });
         }
         case "/api/lock": {
           if (role !== "admin") return bad("Réservé à l'administrateur.", 403);

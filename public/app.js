@@ -836,12 +836,75 @@ function adminHtml() {
         `<label>${i + 1}<br><input type="number" min="3" max="6" value="${t.par}" data-par="${i}"></label>`).join("") +
     `</div></div><div class="pad" style="padding-top:0"><button class="btn" data-act="saveplayers">Enregistrer</button></div></div>`;
 
+  h += payHtml();
+
   h += `<div class="card"><h2>Zone sensible</h2>
     <div class="pad">` + st.rounds.map((R) =>
       `<button class="btn ghost" data-clear="${R.id}" style="margin-bottom:8px">Effacer tous les scores ${esc(rDe(R))}</button>`).join("") +
     `<button class="btn ghost" data-act="logout">Se déconnecter de l'administration</button></div></div>`;
   return h;
 }
+/* ------------------------------------------------------------ règlements
+   Volet réservé à l'organisateur : le serveur ne sort les montants qu'à lui. */
+const eur = (n) => (Math.round(n * 100) / 100).toFixed(2).replace(".", ",") + " €";
+const payData = () => S.st.payments || { due: 0, rows: {} };
+const paidBy = (id) => ((payData().rows || {})[id] || []).reduce((s, x) => s + (+x.a || 0), 0);
+const frDate = (d) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || "");
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : (d || "");
+};
+function payHtml() {
+  const P = payData();
+  const due = S.draftDue !== undefined ? +S.draftDue || 0 : +P.due || 0;
+  const pl = S.st.players;
+  const total = due * pl.length;
+  const encaisse = pl.reduce((s, p) => s + paidBy(p.id), 0);
+  const soldes = pl.filter((p) => due > 0 && paidBy(p.id) >= due - 0.005).length;
+  const pct = total > 0 ? Math.min(100, Math.round((encaisse / total) * 100)) : 0;
+
+  let h = `<div class="card"><h2>Règlements <span class="sub">visible de vous seul</span></h2>
+    <div class="pad" style="padding-bottom:6px">
+      <label class="fl" for="payDue">Montant dû par joueur</label>
+      <div class="payset"><input type="number" id="payDue" step="0.5" min="0" value="${due}">
+        <button class="btn" data-act="savedue">Enregistrer</button></div></div>`;
+
+  h += `<div class="pad" style="padding-top:2px">
+      <div class="paybar"><i style="width:${pct}%"></i></div>
+      <div class="paysum"><b>${eur(encaisse)}</b> encaissés sur ${eur(total)}
+        · ${soldes} joueur${soldes > 1 ? "s" : ""} soldé${soldes > 1 ? "s" : ""} sur ${pl.length}</div></div>`;
+
+  h += `<div class="paylist">`;
+  for (const p of pl) {
+    const list = (P.rows || {})[p.id] || [];
+    const paid = paidBy(p.id);
+    const reste = Math.max(0, due - paid);
+    const cls = due > 0 && paid >= due - 0.005 ? "ok" : paid > 0 ? "part" : "non";
+    const open = S.payOpen === p.id;
+    h += `<div class="payrow ${cls}${open ? " open" : ""}">
+      <button class="pr0" data-payopen="${p.id}">
+        <span class="dot"></span><span class="nm">${esc(p.nom)}</span>
+        <span class="amt">${paid ? eur(paid) : "—"}</span>
+        <span class="rest">${reste > 0.005 ? "reste " + eur(reste) : "soldé"}</span>
+      </button>`;
+    if (open) {
+      h += `<div class="pdet">`;
+      h += list.length
+        ? list.map((x, i) => `<div class="pln"><span>${esc(frDate(x.d))}</span><b>${eur(+x.a)}</b>
+            <button class="x" data-payrm="${p.id}|${i}" aria-label="Supprimer">✕</button></div>`).join("")
+        : `<div class="pln muted">Aucun versement enregistré.</div>`;
+      const dr = S.payDraft || {};
+      h += `<div class="padd">
+        <input type="date" data-paydate="${p.id}" value="${esc(dr.d || new Date().toISOString().slice(0, 10))}">
+        <input type="number" step="0.5" min="0" placeholder="Montant" data-payamt="${p.id}" value="${esc(dr.a || "")}">
+        <button class="btn" data-payadd="${p.id}">Ajouter</button></div></div>`;
+    }
+    h += `</div>`;
+  }
+  h += `</div><p class="note">Les versements ne sont visibles que de vous : les autres joueurs
+    n'y ont pas accès, même en lecture.</p></div>`;
+  return h;
+}
+
 /* rotation évitant les paires déjà jouées */
 function suggest(roundId) {
   const ids = S.st.players.map((p) => p.id);
@@ -1019,6 +1082,30 @@ document.addEventListener("click", async (e) => {
     await write("clear", { round: b.dataset.clear }, "Scores effacés."); await load();
     return;
   }
+  if (b.dataset.payopen) {
+    S.payOpen = S.payOpen === b.dataset.payopen ? null : b.dataset.payopen;
+    render(); return;
+  }
+  if (act === "savedue") {
+    const v = parseFloat(($("#payDue") || {}).value);
+    if (!isFinite(v) || v < 0) return toast("Montant invalide.", true);
+    await write("payments", { due: v }, "Montant dû enregistré.");
+    S.draftDue = undefined; await load(); return;
+  }
+  if (b.dataset.payadd) {
+    const id = b.dataset.payadd;
+    const d = (document.querySelector(`[data-paydate="${id}"]`) || {}).value || "";
+    const a = parseFloat((document.querySelector(`[data-payamt="${id}"]`) || {}).value);
+    if (!isFinite(a) || a <= 0) return toast("Indiquez un montant.", true);
+    await write("payments", { player: id, add: { d, a } }, "Versement enregistré.");
+    S.payDraft = null; await load(); return;
+  }
+  if (b.dataset.payrm) {
+    const [id, i] = b.dataset.payrm.split("|");
+    if (!window.confirm("Supprimer ce versement ?")) return;
+    await write("payments", { player: id, remove: +i }, "Versement supprimé.");
+    await load(); return;
+  }
   if (act === "saveplayers") {
     const players = S.st.players.map((p) => ({ ...p }));
     document.querySelectorAll("[data-ix]").forEach((i) => {
@@ -1031,6 +1118,15 @@ document.addEventListener("click", async (e) => {
     await write("players", { players, teamMode: $("#tmode").value, r1pars }, "Enregistré."); await load();
     return;
   }
+});
+
+/* Une saisie en cours ne doit pas être effacée par le rafraîchissement
+   automatique : on la garde de côté et on réaffiche depuis ce brouillon. */
+document.addEventListener("input", (e) => {
+  const t = e.target;
+  if (t.id === "payDue") S.draftDue = t.value;
+  if (t.dataset.paydate) S.payDraft = { ...(S.payDraft || {}), d: t.value };
+  if (t.dataset.payamt) S.payDraft = { ...(S.payDraft || {}), a: t.value };
 });
 
 document.addEventListener("change", async (e) => {
