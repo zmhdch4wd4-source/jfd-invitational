@@ -478,7 +478,9 @@ function carnetTabHtml() {
   let h = `<div class="pills">` + S.st.rounds.map((R) =>
     `<button data-croud="${R.id}" aria-pressed="${r === R.id}">${esc(R.nom)}</button>`).join("") + `</div>`;
   h += `<div class="card"><h2>${esc(round(r).lieu)} <span class="sub">${esc(round(r).jour)}</span></h2>
-    <div class="pad sm muted" style="padding-top:9px">Par ${parTotal(r)} · ${nH(r)} trous. Touchez un trou pour voir le plan, les repères de distance et le profil.</div>
+    <div class="pad sm muted" style="padding-top:9px">` +
+    (round(r).depart ? `<b style="color:var(--ink)">${esc(round(r).depart)}.</b> ` : "") +
+    `Par ${parTotal(r)} · ${nH(r)} trous. Touchez un trou pour voir le plan, les repères de distance et le profil.</div>
     <table class="rank"><thead><tr><th class="l">Trou</th><th>Par</th><th>Blancs</th><th>Jaunes</th></tr></thead><tbody>`;
   round(r).trous.forEach((t, i) => {
     h += `<tr data-hole="${i + 1}" style="cursor:pointer"><td class="l"><b>${i + 1}</b>${t.nom ? ` <span class="muted sm">${esc(t.nom)}</span>` : ""}</td>
@@ -557,11 +559,12 @@ const SEJOUR = [
     ["Après-midi", "Arrivée à l'hôtel Sercotel Portales", "Calle Portales 85, en plein centre. Six chambres twin, trois nuits, petit-déjeuner inclus."],
   ] },
   { d: "Mercredi 17 mars", t: "El Campo de Logroño", ev: [
-    ["Matin", "El Campo de Logroño — 18 trous", "Parque de La Grajera, à dix minutes de l'hôtel. Six voiturettes pour douze joueurs.", 1],
+    ["", "Parque de La Grajera, à dix minutes de l'hôtel", ""],
+    ["10 h 00", "El Campo de Logroño — 18 trous", "Trois départs : 10 h 00, 10 h 08 et 10 h 16. Six voiturettes pour douze joueurs."],
   ] },
   { d: "Jeudi 18 mars", t: "Izki Golf", ev: [
     ["", "Environ 1 h de route jusqu'à Urturi, en Álava", ""],
-    ["Matin", "Izki Golf — 18 trous", "Green fee et voiturette compris dans la part collectée ; réglés au comptoir le jour même.", 1],
+    ["11 h 00", "Izki Golf — 18 trous", "Premier départ, les parties s'élancent à la suite. Green fee et voiturette compris dans la part collectée, réglés au comptoir."],
   ] },
   { d: "Vendredi 19 mars", t: "Retour", ev: [
     ["Matin", "Chambres libérées", "", 1],

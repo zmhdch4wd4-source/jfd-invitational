@@ -340,6 +340,7 @@ export const ROUNDS = [
   "nom": "Logroño",
   "lieu": "El Campo de Logroño",
   "jour": "Mercredi 17 mars",
+  "depart": "Départs à 10 h 00, 10 h 08 et 10 h 16",
   "trous": [
    {
     "par": 4,
@@ -997,6 +998,7 @@ export const ROUNDS = [
   "nom": "Izki",
   "lieu": "Izki Golf",
   "jour": "Jeudi 18 mars",
+  "depart": "Premier départ à 11 h 00",
   "trous": [
    {
     "par": 4,
