@@ -483,6 +483,14 @@ function carnetTabHtml() {
   });
   return h + `</tbody></table></div>`;
 }
+/* Repères sur lesquels le carnet est calé : "bl" (blancs) ou "ja" (jaunes).
+   Changer cette seule valeur bascule le bandeau, sa couleur et le sens de
+   l'écart. Attention : les pastilles posées sur les visuels portent des
+   distances écrites en dur, elles sont à reprendre en même temps. */
+const TEE = "bl";
+const TEE_NOM = { bl: "blancs", ja: "jaunes" };
+const TEE_AUTRE = TEE === "bl" ? "ja" : "bl";
+
 /** Le visuel du trou, enveloppé au plus près de l'image pour que les
  *  pastilles tombent au bon endroit quelle que soit la taille affichée. */
 function pinsHtml(t) {
@@ -502,8 +510,10 @@ function holeSheet(r, i) {
       <button class="nav" data-go="1"${i === n ? " disabled" : ""} aria-label="Trou suivant">›</button>
       <button data-act="closesheet">Fermer</button></div></div><div class="body">`;
   /* visuel + pastilles de distance posées sur les repères */
-  h += `<div class="whites"><b>Distances depuis les repères blancs</b>` +
-    (t.corr ? `<span>Depuis les jaunes, retrancher <b>${esc(t.corr)} m</b></span>` : "") + `</div>`;
+  const ec = (t.bl != null && t.ja != null) ? t.bl - t.ja : null;
+  h += `<div class="whites tee-${TEE}"><b>Distances depuis les repères ${TEE_NOM[TEE]}</b>` +
+    (ec ? `<span>Depuis les ${TEE_NOM[TEE_AUTRE]}, ${TEE === "bl" ? "retrancher" : "ajouter"}
+       <b>${ec} m</b></span>` : "") + `</div>`;
   h += t.img
     ? `<div class="vis" data-zoom="${t.img}" data-zr="${r}|${i}">${framed(t, i)}<span class="zx">Agrandir</span></div>`
     : `<div class="vis" style="cursor:default"><div class="empty">Pas encore de visuel pour ce parcours.</div></div>`;
