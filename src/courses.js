@@ -3,35 +3,335 @@ export const ROUNDS = [
  {
   "id": "r1",
   "nom": "Jour 1",
-  "lieu": "Parcours à confirmer",
+  "lieu": "Zuasti — sous réserve de confirmation",
   "jour": "Mardi 16 mars",
   "trous": [
    {
-    "par": 4
+    "par": 4,
+    "hcp": 3,
+    "bl": 366,
+    "ja": 358,
+    "img": "img/zuasti-01.jpg",
+    "obs": [
+     [
+      "Bunkers à gauche du green",
+      "342 et 356 m"
+     ]
+    ],
+    "gr": "25",
+    "desc": "Trou emblématique du parcours, avec sa croix de pierre. Un obstacle d'eau latéral à droite conditionne le départ. Green à deux plateaux, protégé par un bunker à gauche.",
+    "pins": [
+     [
+      45,
+      20,
+      "Entrée 354 m",
+      "centre 366 m",
+      "r"
+     ],
+     [
+      40,
+      21,
+      "Bunkers",
+      "342 m",
+      "l"
+     ]
+    ]
    },
    {
-    "par": 3
+    "par": 3,
+    "hcp": 16,
+    "bl": 141,
+    "ja": 133,
+    "img": "img/zuasti-02.jpg",
+    "obs": [
+     [
+      "Deux bunkers à gauche",
+      "129 et 143 m"
+     ],
+     [
+      "Herbe haute avant-droit",
+      "—"
+     ]
+    ],
+    "gr": "22",
+    "desc": "Par 3 au départ surélevé. Green protégé par deux bunkers à gauche et par une dépression d'herbe haute à l'avant droit. Dépasser le green ou manquer à droite mène au double bogey.",
+    "pins": [
+     [
+      52,
+      36,
+      "Entrée 130 m",
+      "centre 141 m",
+      "r"
+     ],
+     [
+      44,
+      32,
+      "Bunkers",
+      "129 m",
+      "l"
+     ]
+    ]
    },
    {
-    "par": 4
+    "par": 4,
+    "hcp": 5,
+    "bl": 432,
+    "ja": 318,
+    "img": "img/zuasti-03.jpg",
+    "obs": [
+     [
+      "Ravin au départ",
+      "à franchir"
+     ],
+     [
+      "Hors limites à droite",
+      "tout le trou"
+     ],
+     [
+      "Bunkers du green",
+      "390 et 408 m"
+     ]
+    ],
+    "gr": "29",
+    "desc": "Long par 4. Depuis le départ des messieurs, il faut franchir un ravin intimidant, hors limites à droite. Green protégé par deux bunkers de part et d'autre.",
+    "pins": [
+     [
+      43,
+      20,
+      "Entrée 418 m",
+      "centre 432 m",
+      "l"
+     ],
+     [
+      47,
+      18,
+      "Bunkers du green",
+      "390 m",
+      "r"
+     ]
+    ]
    },
    {
-    "par": 4
+    "par": 3,
+    "hcp": 11,
+    "bl": 172,
+    "ja": 161,
+    "img": "img/zuasti-04.jpg",
+    "obs": [
+     [
+      "Eau sur tout le flanc droit",
+      "dès 131 m"
+     ],
+     [
+      "Bunker derrière le green",
+      "195 m"
+     ]
+    ],
+    "gr": "16",
+    "desc": "Par 3 avec de l'eau à droite et un bunker derrière le green. Le vent de face complique nettement le trou.",
+    "pins": [
+     [
+      54,
+      34,
+      "Entrée 164 m",
+      "centre 172 m",
+      "l"
+     ],
+     [
+      63,
+      37,
+      "Eau",
+      "au ras du green",
+      "r"
+     ]
+    ]
    },
    {
-    "par": 3
+    "par": 4,
+    "hcp": 12,
+    "bl": 322,
+    "ja": 308,
+    "img": "img/zuasti-05.jpg",
+    "obs": [
+     [
+      "Bunker à gauche",
+      "203 m"
+     ],
+     [
+      "Eau latérale à droite",
+      "depuis le départ"
+     ],
+     [
+      "Bunker droit du green",
+      "au green"
+     ]
+    ],
+    "gr": "24",
+    "desc": "Par 4 avec eau latérale à droite et hors limites à gauche, doublé d'un bunker de ce même côté. Green flanqué d'un bunker long et profond à droite.",
+    "pins": [
+     [
+      48,
+      27,
+      "Entrée 310 m",
+      "centre 322 m",
+      "r"
+     ],
+     [
+      47,
+      43,
+      "Bunker",
+      "203 m",
+      "l"
+     ]
+    ]
    },
    {
-    "par": 4
+    "par": 5,
+    "hcp": 7,
+    "bl": 481,
+    "ja": 471,
+    "img": "img/zuasti-06.jpg",
+    "obs": [
+     [
+      "Bunker à gauche",
+      "190 m"
+     ],
+     [
+      "Lac à droite",
+      "vers 255 m"
+     ],
+     [
+      "Bunkers du green",
+      "457 et 490 m"
+     ]
+    ],
+    "gr": "22",
+    "desc": "Par 5 avec un bunker à gauche et un lac à droite. Green à deux plateaux, protégé par un bunker sur sa droite.",
+    "pins": [
+     [
+      52,
+      14,
+      "Entrée 470 m",
+      "centre 481 m",
+      "l"
+     ],
+     [
+      65,
+      35,
+      "Lac",
+      "à droite",
+      "l"
+     ]
+    ]
    },
    {
-    "par": 4
+    "par": 5,
+    "hcp": 17,
+    "bl": 425,
+    "ja": 425,
+    "img": "img/zuasti-07.jpg",
+    "obs": [
+     [
+      "Bunker à gauche",
+      "186 m"
+     ],
+     [
+      "Bunkers du green",
+      "392 et 401 m"
+     ]
+    ],
+    "gr": "23",
+    "desc": "Par 5 où il est important de placer la balle en fairway. Green surélevé à trois plateaux, bunker à gauche.",
+    "pins": [
+     [
+      49,
+      17,
+      "Entrée 414 m",
+      "centre 425 m",
+      "r"
+     ],
+     [
+      44,
+      58,
+      "Bunker",
+      "186 m",
+      "l"
+     ]
+    ]
    },
    {
-    "par": 4
+    "par": 5,
+    "hcp": 8,
+    "bl": 458,
+    "ja": 449,
+    "img": "img/zuasti-08.jpg",
+    "obs": [
+     [
+      "Ruisseau en travers",
+      "vers 283 m"
+     ],
+     [
+      "Bunker à gauche",
+      "325 m"
+     ],
+     [
+      "Bunkers du green",
+      "468 et 490 m"
+     ]
+    ],
+    "gr": "29",
+    "desc": "Par 5 avec une pinède à droite, un ruisseau qui traverse le fairway et de l'eau latérale à droite jusqu'au green. Green protégé par un bunker à gauche et l'eau à droite.",
+    "pins": [
+     [
+      56,
+      19,
+      "Entrée 444 m",
+      "centre 458 m",
+      "l"
+     ],
+     [
+      50,
+      46,
+      "Ruisseau",
+      "vers 283 m",
+      "l"
+     ]
+    ]
    },
    {
-    "par": 4
+    "par": 3,
+    "hcp": 15,
+    "bl": 197,
+    "ja": 170,
+    "img": "img/zuasti-09.jpg",
+    "obs": [
+     [
+      "Bunkers à droite du green",
+      "181 et 190 m"
+     ],
+     [
+      "Eau derrière le green",
+      "—"
+     ]
+    ],
+    "gr": "25",
+    "desc": "Par 3 avec un bunker à droite du green et de l'eau derrière. Le vent peut faire jouer trois à quatre clubs d'écart selon qu'il porte ou s'oppose.",
+    "pins": [
+     [
+      50,
+      32,
+      "Entrée 185 m",
+      "centre 197 m",
+      "r"
+     ],
+     [
+      36,
+      18,
+      "Eau",
+      "derrière le green",
+      "r"
+     ]
+    ]
    }
   ]
  },

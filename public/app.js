@@ -831,10 +831,7 @@ function adminHtml() {
     <div class="pad"><label class="fl" for="tmode">Classement par équipe</label>
       <select id="tmode"><option value="best4"${st.teamMode === "best4" ? " selected" : ""}>Les 4 meilleurs nets</option>
       <option value="all"${st.teamMode === "all" ? " selected" : ""}>La somme des 6 nets</option></select></div>
-    <div class="pad" style="padding-top:0"><label class="fl">Jour 1 — pars du parcours, à confirmer</label>
-      <div class="parrow">` + st.rounds[0].trous.map((t, i) =>
-        `<label>${i + 1}<br><input type="number" min="3" max="6" value="${t.par}" data-par="${i}"></label>`).join("") +
-    `</div></div><div class="pad" style="padding-top:0"><button class="btn" data-act="saveplayers">Enregistrer</button></div></div>`;
+    <div class="pad" style="padding-top:0"><button class="btn" data-act="saveplayers">Enregistrer</button></div></div>`;
 
   h += payHtml();
 
@@ -1114,8 +1111,7 @@ document.addEventListener("click", async (e) => {
     document.querySelectorAll("[data-eq]").forEach((s) => {
       const p = players.find((x) => x.id === s.dataset.eq); if (p) p.eq = s.value;
     });
-    const r1pars = [...document.querySelectorAll("[data-par]")].map((i) => Math.max(3, Math.min(6, +i.value || 4)));
-    await write("players", { players, teamMode: $("#tmode").value, r1pars }, "Enregistré."); await load();
+    await write("players", { players, teamMode: $("#tmode").value }, "Enregistré."); await load();
     return;
   }
 });

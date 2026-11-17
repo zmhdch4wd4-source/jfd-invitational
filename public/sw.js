@@ -1,7 +1,7 @@
 /* JFD 70's Invitational — cache hors ligne.
    Les visuels et le carnet restent consultables sans réseau ;
    les scores passent toujours par le serveur (voir la file d'attente côté client). */
-const CACHE = "jfd-v14";
+const CACHE = "jfd-v15";
 
 const CORE = ["/", "/index.html", "/app.js", "/icon.png",
   "/logo-blanc.png", "/logo-mark.png", "/logo-noir.png"];
@@ -9,6 +9,7 @@ const IMGS = [];
 for (let i = 1; i <= 18; i++) {
   const n = String(i).padStart(2, "0");
   IMGS.push("/img/izki-" + n + ".jpg", "/img/izki-" + n + "p.jpg", "/img/logrono-" + n + ".jpg");
+  if (i <= 9) IMGS.push("/img/zuasti-" + n + ".jpg");
 }
 
 /* Un fichier manquant ne doit pas faire échouer toute l'installation. */

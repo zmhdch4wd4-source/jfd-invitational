@@ -83,10 +83,9 @@ function mayWrite(role, round, player) {
 
 /* -------------------------------------------------------------- lecture */
 async function readState(db, role) {
-  const [players, teamMode, r1pars, flights, adminHash, proposals, locked, payments, sc, an] = await Promise.all([
+  const [players, teamMode, flights, adminHash, proposals, locked, payments, sc, an] = await Promise.all([
     getSetting(db, "players", PLAYERS),
     getSetting(db, "teamMode", "best4"),
-    getSetting(db, "r1pars", null),
     getSetting(db, "flights", {}),
     getSetting(db, "adminHash", null),
     getSetting(db, "proposals", {}),
@@ -95,10 +94,8 @@ async function readState(db, role) {
     db.prepare(`SELECT round, player, hole, strokes FROM scores`).all(),
     db.prepare(`SELECT round, player, value FROM announces`).all(),
   ]);
-  const rounds = ROUNDS.map((R) =>
-    R.id === "r1" && Array.isArray(r1pars)
-      ? { ...R, trous: R.trous.map((t, i) => ({ ...t, par: r1pars[i] ?? t.par })) }
-      : R);
+  // Les trois parcours portent désormais leurs vraies données : plus de pars à saisir.
+  const rounds = ROUNDS;
 
   const scores = {};
   for (const r of sc.results || []) {
@@ -217,7 +214,6 @@ export default {
           if (!Array.isArray(body.players)) return bad("Liste de joueurs attendue.");
           await setSetting(db, "players", body.players);
           if (body.teamMode) await setSetting(db, "teamMode", body.teamMode);
-          if (Array.isArray(body.r1pars)) await setSetting(db, "r1pars", body.r1pars);
           return json({ ok: true });
         }
         case "/api/flights": {
