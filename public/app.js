@@ -555,20 +555,16 @@ const SEJOUR = [
     ["Midi", "Club de Golf Zuasti — neuf trous", "Le neuf aller, par 36, 2 994 m des blancs. Green fee réglé sur place.", 1],
     ["", "Environ 1 h 15 de route jusqu'à Logroño", ""],
     ["Après-midi", "Arrivée à l'hôtel Sercotel Portales", "Calle Portales 85, en plein centre. Six chambres twin, trois nuits, petit-déjeuner inclus."],
-    ["Soir", "Dîner en ville", "Chacun règle sa part sur place."],
   ] },
   { d: "Mercredi 17 mars", t: "El Campo de Logroño", ev: [
     ["Matin", "El Campo de Logroño — 18 trous", "Parque de La Grajera, à dix minutes de l'hôtel. Six voiturettes pour douze joueurs.", 1],
-    ["Midi", "Déjeuner au club", "Menu du jour, environ 30 € par personne, réglé sur place."],
-    ["Soir", "Libre", "Rien de prévu : Logroño se visite à pied depuis l'hôtel."],
   ] },
   { d: "Jeudi 18 mars", t: "Izki Golf", ev: [
     ["", "Environ 1 h de route jusqu'à Urturi, en Álava", ""],
     ["Matin", "Izki Golf — 18 trous", "Green fee et voiturette compris dans la part collectée ; réglés au comptoir le jour même.", 1],
-    ["Soir", "Dernière soirée", "Classement final et remise des prix."],
   ] },
   { d: "Vendredi 19 mars", t: "Retour", ev: [
-    ["Matin", "Petit-déjeuner et chambres libérées", "", 1],
+    ["Matin", "Chambres libérées", "", 1],
     ["Ensuite", "Route du retour", "Les voitures se composent selon les contraintes de chacun : certains s'arrêteront en chemin, d'autres rentreront d'une traite."],
   ] },
 ];
@@ -620,8 +616,8 @@ function sejourHtml() {
       <div class="ob"><span><b>Part par joueur</b></span><span class="r"><b>287,50 €</b></span></div>
     </div>
     <div class="note">Un minimum de 150 € quand vous voulez avant le 30 janvier, le solde avant le
-      15 février. Restent à votre charge, sur place : le parcours du premier jour, le déjeuner du
-      mercredi au club, les dîners, le carburant et les péages.</div></div>`;
+      15 février. Restent à votre charge, sur place : le parcours du premier jour, le carburant,
+      les péages et vos dépenses personnelles.</div></div>`;
 
   h += `<div class="card"><h2>Bon à savoir</h2><div class="rules"><ul>
       <li>Carte d'identité ou passeport en cours de validité, et votre carte de licence : certains clubs la demandent au départ.</li>
